@@ -1,4 +1,7 @@
-﻿using DoorbellPiWeb.Models;
+﻿using DoorbellPiWeb.Data;
+using DoorbellPiWeb.Models;
+using DoorbellPiWeb.Models.Db;
+using DoorbellPiWeb.Models.Db.NotMapped;
 using DoorbellPiWeb.Models.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,38 +20,109 @@ namespace DoorbellPiWeb.Controllers
     public class AuthenticationController : ControllerBase
     {
 
-        private readonly string jwtKey;
+        private readonly string _jwtKey;
 
-        private readonly string serverPassword; 
+        private readonly string _serverPassword;
 
-        public AuthenticationController(IConfiguration config)
+        private UnitOfWork _unitOfWork;
+
+        public AuthenticationController(IConfiguration config, UnitOfWork unitOfWork)
         {
-            jwtKey = config["JWTServerKey"];
-            serverPassword = config["ServerPassword"];
+            _jwtKey = config["JWTServerKey"];
+            _serverPassword = config["ServerPassword"];
+            _unitOfWork = unitOfWork;
         }
-        
+
         [HttpPost("login")]
         public IActionResult Login([FromBody] DeviceLoginModel deviceLoginInfo)
         {
-            if (deviceLoginInfo is null)
+            if (!ModelState.IsValid || !deviceLoginInfo.Password.Equals(_serverPassword))
             {
-                return BadRequest("Device login information is missing");
-            }
-            if (userdeviceLoginInfo.UserName == "johndoe" && deviceLoginInfo.Password == "def@123")
+                return BadRequest("Device login information is missing: 'DeviceUUID', 'DisplayName', 'Password', and 'DeviceType' ('App' or 'Doorbell'). " +
+                    "Additionally, 'IPAddress' and 'Port' are required for doorbells.");
+            } else if (deviceLoginInfo.DeviceType.Equals("App"))
             {
-                var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("superSecretKey@345"));
-                var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-                var tokeOptions = new JwtSecurityToken(
-                    issuer: "https://localhost:5001",
-                    audience: "https://localhost:5001",
-                    claims: new List<Claim>(),
-                    expires: DateTime.Now.AddDays(1),
-                    signingCredentials: signinCredentials
-                );
-                var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
-                return Ok(new DeviceLoginToken { Token = tokenString });
+                AppConnection? appConnection = _unitOfWork.AppConnectionRepo.Get(c => c.UUID == deviceLoginInfo.DeviceUUID).FirstOrDefault();
+                if (appConnection is null)
+                {
+                    appConnection = new AppConnection
+                    {
+                        UUID = deviceLoginInfo.DeviceUUID,
+                        DisplayName = deviceLoginInfo.DisplayName,
+                        LastLoginTime = DateTime.UtcNow,
+                        IsBanned = false,
+
+                    };
+
+                    _unitOfWork.AppConnectionRepo.Insert(appConnection);
+                }
+                else if (appConnection.IsBanned)
+                {
+                    return Unauthorized();
+                }
+                else
+                {
+                    appConnection.DisplayName = deviceLoginInfo.DisplayName;
+                    appConnection.LastLoginTime = DateTime.UtcNow;
+                    _unitOfWork.AppConnectionRepo.Update(appConnection);
+                }
+
+                return GenerateJWT();
+            } else if (deviceLoginInfo.DeviceType.Equals("Doorbell"))
+            {
+                if (deviceLoginInfo.IPAddress is null || deviceLoginInfo.Port is null || deviceLoginInfo.IPAddress.Length < 7) // 1.1.1.1 - 7 characters
+                {
+                    return BadRequest("'IPAddress' and 'Port' must be provided for doorbell connections to be established.");
+                }
+
+                DoorbellConnection? doorbellConnection = _unitOfWork.DoorbellConnectionRepo.Get(c => c.UUID == deviceLoginInfo.DeviceUUID).FirstOrDefault();
+                if (doorbellConnection is null)
+                {
+                    doorbellConnection = new DoorbellConnection
+                    {
+                        UUID = deviceLoginInfo.DeviceUUID,
+                        DisplayName = deviceLoginInfo.DisplayName,
+                        LastLoginTime = DateTime.UtcNow,
+                        IPAddress = deviceLoginInfo.IPAddress,
+                        PortNumber = (int)deviceLoginInfo.Port,
+                        IsBanned = false,
+
+                    };
+
+                    _unitOfWork.DoorbellConnectionRepo.Insert(doorbellConnection);
+                }
+                else if (doorbellConnection.IsBanned)
+                {
+                    return Unauthorized();
+                }
+                else
+                {
+                    doorbellConnection.DisplayName = deviceLoginInfo.DisplayName;
+                    doorbellConnection.LastLoginTime = DateTime.UtcNow;
+                    doorbellConnection.IPAddress = deviceLoginInfo.IPAddress;
+                    doorbellConnection.PortNumber = (int)deviceLoginInfo.Port;
+                    _unitOfWork.DoorbellConnectionRepo.Update(doorbellConnection);
+                }
+
+                return GenerateJWT();
             }
             return Unauthorized();
+        }
+
+        // Generate a JSON Web token that will last a day and return it to the mobile app or doorbell that has successfully logged in.
+        private IActionResult GenerateJWT()
+        {
+            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtKey));
+            var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+            var tokenOptions = new JwtSecurityToken(
+                issuer: "https://localhost:5001",
+                audience: "https://localhost:5001",
+                claims: new List<Claim>(),
+                expires: DateTime.Now.AddDays(1),
+                signingCredentials: signinCredentials
+            );
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+            return Ok(new DeviceLoginToken { Token = tokenString });
         }
     }
 }

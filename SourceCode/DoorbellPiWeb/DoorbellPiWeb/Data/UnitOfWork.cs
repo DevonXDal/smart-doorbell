@@ -1,5 +1,6 @@
 ﻿using DoorbellPiWeb.Data;
 using DoorbellPiWeb.Models.Db;
+using DoorbellPiWeb.Models.Db.MtoM;
 using System;
 
 namespace DoorbellPiWeb.Data
@@ -21,19 +22,37 @@ namespace DoorbellPiWeb.Data
         /// </summary>
         /// <param name="context">The context repository.</param>
         /// <param name="videoChatRepo">The repository to manage the various video chat sessions between app users and a doorbell.</param>
+        /// <param name="relatedFileRepo">The repository to manage the files stored on this system for a doorbell.</param>
+        /// <param name="doorbellConnectionRepo">The repository to manage the various doorbells that are connected to the Web server.</param>
+        /// <param name="appConnectionRepo">The repository to manage the various instances of the app that are connected to the Web server.</param>
+        /// <param name="doorbellStatusRepo">The repository to manage the status updates for a doorbell as they come in.</param>
+        /// <param name="appConnectionToVideoChatRepo">The repository to manage the app connections to a specific video chat session</param>
         public UnitOfWork(DoorbellDbContext context, 
             RepositoryBase<VideoChat> videoChatRepo,
-            RepositoryBase<RelatedFile> relatedFileRepo)
+            RepositoryBase<RelatedFile> relatedFileRepo,
+            RepositoryBase<DoorbellConnection> doorbellConnectionRepo,
+            RepositoryBase<AppConnection> appConnectionRepo,
+            RepositoryBase<DoorbellStatus> doorbellStatusRepo,
+            RepositoryBase<AppConnectionToVideoChat> appConnectionToVideoChatRepo)
         {
             _context = context;
+
             VideoChatRepo = videoChatRepo;
             RelatedFileRepo = relatedFileRepo;
+            AppConnectionRepo = appConnectionRepo;
+            DoorbellConnectionRepo = doorbellConnectionRepo;
+            AppConnectionToVideoChatRepo = appConnectionToVideoChatRepo;
+            DoorbellStatusRepo = doorbellStatusRepo;
 
         }
         
         public RepositoryBase<VideoChat> VideoChatRepo { get; set; }
         
+        public RepositoryBase<DoorbellConnection> DoorbellConnectionRepo { get; set; }
+        public RepositoryBase<AppConnection> AppConnectionRepo { get; set; }
+        public RepositoryBase<DoorbellStatus> DoorbellStatusRepo { get; set; }
         public RepositoryBase<RelatedFile> RelatedFileRepo { get; set; }
+        public RepositoryBase<AppConnectionToVideoChat> AppConnectionToVideoChatRepo { get; set; }
 
 
         /// <summary>

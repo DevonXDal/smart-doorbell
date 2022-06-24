@@ -29,6 +29,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  json_serializable: ^6.2.0
+  http: ^0.13.4
+  twilio_programmable_video: ^0.13.0
+  get: ^4.6.5
+  flutter_secure_storage: ^5.0.2
+  sqflite:
+  path:
+  device_info_plus: ^4.0.0
 
 
   # The following adds the Cupertino Icons font to your application.

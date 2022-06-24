@@ -98,33 +98,32 @@ namespace DoorbellPiWeb.Data
         /// <param name="entity">The entry to be inserted into the table</param>
         public virtual void Insert(T entity)
         {
+            entity.Created = DateTime.UtcNow;
+            entity.LastModified = entity.Created;
+            entity.IsDeleted = false;
             dbSet.Add(entity);
             context.SaveChanges();
         }
 
         /// <summary>
-        /// Deletes an entry from the database based on its assigned ID
+        /// Soft deletes an entry from the database based on its assigned ID
         /// </summary>
         /// <param name="id">The unique ID of the entry</param>
         public virtual void Delete(object id)
         {
             T entityToDelete = dbSet.Find(id);
-            Delete(entityToDelete);
-            context.SaveChanges();
+            entityToDelete.IsDeleted = true;
+            Update(entityToDelete);
         }
 
         /// <summary>
-        /// Takes in an entity as a parameter to perform a cascade delete operation on
+        /// Takes in an entity as a parameter to perform a soft delete operation on
         /// </summary>
         /// <param name="entityToDelete">The entity to be deleted</param>
         public virtual void Delete(T entityToDelete)
         {
-            if (context.Entry(entityToDelete).State == EntityState.Detached)
-            {
-                dbSet.Attach(entityToDelete);
-            }
-            dbSet.Remove(entityToDelete);
-            context.SaveChanges();
+            entityToDelete.IsDeleted = true;
+            Update(entityToDelete);
         }
 
         /// <summary>
@@ -133,6 +132,7 @@ namespace DoorbellPiWeb.Data
         /// <param name="entityToUpdate">The entity to be updated</param>
         public virtual void Update(T entityToUpdate)
         {
+            entityToUpdate.LastModified = DateTime.UtcNow;
             dbSet.Attach(entityToUpdate);
             context.Entry(entityToUpdate).State = EntityState.Modified;
             context.SaveChanges();

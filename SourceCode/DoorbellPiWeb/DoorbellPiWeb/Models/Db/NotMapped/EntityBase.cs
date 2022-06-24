@@ -7,7 +7,7 @@ namespace DoorbellPiWeb.Models.Db.NotMapped
     /// It provides the capability to perform soft deletes and view the time of data creation.
     /// </summary>
     [NotMapped]
-    public class EntityBase
+    public abstract class EntityBase
     {
         public int Id { get; set; }
 

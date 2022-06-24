@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using DoorbellPiWeb.Models.Db;
+using DoorbellPiWeb.Models.Db.MtoM;
 using Microsoft.EntityFrameworkCore;
 
 namespace DoorbellPiWeb.Data
@@ -11,8 +12,17 @@ namespace DoorbellPiWeb.Data
     /// </summary>
     public class DoorbellDbContext : DbContext
     {
-
+        // Device connection models
         public DbSet<AppConnection> AppConnections { get; set; }
+        public DbSet<DoorbellConnection> DoorbellConnections { get; set; }
+
+        // Supporting models
+        public DbSet<VideoChat> VideoChats { get; set; }
+        public DbSet<RelatedFile> RelatedFiles { get; set; }
+        public DbSet<DoorbellStatus> DoorbellStatuses { get; set; }
+
+        // Many-to-Many models
+        public DbSet<AppConnectionToVideoChat> AppConnectionToVideoChats { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DoorbellDbContext"/> and migrates the database if needed.
@@ -49,6 +59,12 @@ namespace DoorbellPiWeb.Data
             // ----- Table Names -----
 
             modelBuilder.Entity<AppConnection>().ToTable("AppConnections"); 
+            modelBuilder.Entity<DoorbellConnection>().ToTable("DoorbellConnections"); 
+            modelBuilder.Entity<RelatedFile>().ToTable("RelatedFiles"); 
+            modelBuilder.Entity<VideoChat>().ToTable("VideoChats"); 
+            modelBuilder.Entity<DoorbellStatus>().ToTable("DoorbellStatuses");
+            modelBuilder.Entity<AppConnectionToVideoChat>().ToTable("AppConnectionToVideoChats");
+
 
         }
     }

@@ -18,10 +18,10 @@ namespace DoorbellPiWeb.Models.Db
         [Display(Name = "File Name")]
         public String FileName { get; set; }
 
-        public int? VideoChatId { get; set; }
+        public int DoorbellConnectionId { get; set; }
 
-        [ForeignKey("ProjectId")]
-        public virtual VideoChat? VideoChat { get; set; }
+        [ForeignKey("DoorbellConnectionId")]
+        public virtual DoorbellConnection? DoorbellConnection { get; set; }
 
         
 

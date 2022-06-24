@@ -13,5 +13,13 @@
         /// 2. Doorbell
         /// </summary>
         public string DeviceType { get; set; }
+
+        public string Password { get; set; }
+
+        // Provide these for a doorbell login
+
+        public string? IPAddress { get; set; }
+
+        public int? Port { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace DoorbellPiWeb.Models.Db.NotMapped
     /// This includes information such as display names, uuids, and whether the device has been banned from accessing the system.
     /// </summary>
     [NotMapped]
-    public class DeviceConnection : EntityBase
+    public abstract class DeviceConnection : EntityBase
     {
         public string DisplayName { get; set; }
 
