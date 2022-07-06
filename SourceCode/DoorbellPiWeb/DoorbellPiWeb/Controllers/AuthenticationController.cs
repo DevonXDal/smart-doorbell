@@ -36,10 +36,13 @@ namespace DoorbellPiWeb.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] DeviceLoginModel deviceLoginInfo)
         {
-            if (!ModelState.IsValid || !deviceLoginInfo.Password.Equals(_serverPassword))
+            if (!ModelState.IsValid)
             {
                 return BadRequest("Device login information is missing: 'DeviceUUID', 'DisplayName', 'Password', and 'DeviceType' ('App' or 'Doorbell'). " +
                     "Additionally, 'IPAddress' and 'Port' are required for doorbells.");
+            } else if (!deviceLoginInfo.Password.Equals(_serverPassword))
+            {
+                return Unauthorized();
             } else if (deviceLoginInfo.DeviceType.Equals("App"))
             {
                 AppConnection? appConnection = _unitOfWork.AppConnectionRepo.Get(c => c.UUID == deviceLoginInfo.DeviceUUID).FirstOrDefault();
@@ -58,7 +61,7 @@ namespace DoorbellPiWeb.Controllers
                 }
                 else if (appConnection.IsBanned)
                 {
-                    return Unauthorized();
+                    return Forbid();
                 }
                 else
                 {
@@ -93,12 +96,16 @@ namespace DoorbellPiWeb.Controllers
                 }
                 else if (doorbellConnection.IsBanned)
                 {
-                    return Unauthorized();
+                    return Forbid();
                 }
                 else
                 {
                     doorbellConnection.DisplayName = deviceLoginInfo.DisplayName;
                     doorbellConnection.LastLoginTime = DateTime.UtcNow;
+                    doorbellConnection.LastTurnedOn = (deviceLoginInfo.LastTurnedOn != null) // If the turn on time was supplied
+                        ? (new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).AddSeconds(Convert.ToDouble(deviceLoginInfo.LastTurnedOn)) // Then convert the UTC Unix timestamp to Datetime
+                        : DateTime.UtcNow.AddMinutes(-5); // Else just use five minutes ago
+                    doorbellConnection.PreviousActivationTime = DateTime.UtcNow.AddDays(-1); // Done to prevent instant notifications
                     doorbellConnection.IPAddress = deviceLoginInfo.IPAddress;
                     doorbellConnection.PortNumber = (int)deviceLoginInfo.Port;
                     _unitOfWork.DoorbellConnectionRepo.Update(doorbellConnection);
@@ -118,7 +125,7 @@ namespace DoorbellPiWeb.Controllers
                 issuer: "https://localhost:5001",
                 audience: "https://localhost:5001",
                 claims: new List<Claim>(),
-                expires: DateTime.Now.AddDays(1),
+                expires: DateTime.Now.AddDays(3),
                 signingCredentials: signinCredentials
             );
             var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);

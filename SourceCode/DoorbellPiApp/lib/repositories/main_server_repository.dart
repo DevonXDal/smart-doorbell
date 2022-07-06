@@ -14,7 +14,7 @@ class MainServerRepository {
 
   /// This method attempts to simplify the process of connecting to the Web server to login in the device by requiring only four of the six fields.
   /// The request headers are also configured. No processing of the response happens during this call. That responsibility is left to the caller.
-  Future<http.Response> tryLoginAttempt(String ipAddress, int port, String password, String displayName) async {
+  Future<http.Response?> tryLoginAttempt(String ipAddress, int port, String password, String displayName) async {
     // https://stackoverflow.com/questions/50278258/http-post-with-json-on-body-flutter-dart - Raj Yadav
 
     String loginURL = "https://$ipAddress:$port/api/Authentication/login";
@@ -26,10 +26,22 @@ class MainServerRepository {
       "password": password
     };
 
-    return await http.post(Uri.parse(loginURL),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(loginData)
-    );
+    try {
+      return await http.post(Uri.parse(loginURL),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(loginData)
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {
+      try { // Unsecure connection
+        return await http.post(Uri.parse(loginURL.replaceAll("https", "http")),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(loginData)
+        ).timeout(const Duration(seconds: 3));
+      } catch (_) {
+
+      }
+      return null;
+    }
   }
 
   // This is done in order to help the Web server identify the device between logins.

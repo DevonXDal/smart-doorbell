@@ -98,6 +98,7 @@ class DoorbellThemedNavScaffold extends StatelessWidget {
         ),
       ),
       backgroundColor: AppColors.pageBackgroundPurple,
+      resizeToAvoidBottomInset: false,
     );
   }
 

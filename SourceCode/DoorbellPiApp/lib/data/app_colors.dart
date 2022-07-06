@@ -12,6 +12,8 @@ abstract class AppColors {
   static const Color pageComponentBackgroundDeepDarkBlue = Color.fromARGB(255, 0, 39, 43);
 
   static const Color textForegroundOrange = Color.fromARGB(255, 242, 255, 73);
+  
+  static const Color textForegroundAlternateOrange = Color.fromARGB(255, 252, 163, 16);
 
   static const Color transparentOptionsBlue = Color.fromARGB(127, 0, 51, 56);
 }

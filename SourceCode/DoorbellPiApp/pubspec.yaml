@@ -34,8 +34,10 @@ dependencies:
   twilio_programmable_video: ^0.13.0
   get: ^4.6.5
   flutter_secure_storage: ^5.0.2
-  sqflite:
-  path:
+  drift: ^1.7.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.0.0
+  path: ^1.8.1
   device_info_plus: ^4.0.0
 
 
@@ -53,6 +55,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
+  moor_generator: ^4.5.1
+  build_runner: ^2.1.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

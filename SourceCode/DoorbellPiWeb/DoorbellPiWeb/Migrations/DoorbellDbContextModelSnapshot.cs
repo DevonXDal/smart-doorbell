@@ -85,6 +85,9 @@ namespace DoorbellPiWeb.Migrations
                     b.Property<int>("PortNumber")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("PreviousActivationTime")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("UUID")
                         .IsRequired()
                         .HasColumnType("longtext");

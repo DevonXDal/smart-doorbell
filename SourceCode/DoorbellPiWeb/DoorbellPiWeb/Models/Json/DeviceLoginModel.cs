@@ -21,5 +21,7 @@
         public string? IPAddress { get; set; }
 
         public int? Port { get; set; }
+
+        public long? LastTurnedOn { get; set; }
     }
 }

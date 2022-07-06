@@ -12,6 +12,10 @@ namespace DoorbellPiWeb.Models.Db
 
         public int PortNumber { get; set; }
 
+        public DateTime PreviousActivationTime { get; set; }
+
+        public DateTime LastTurnedOn { get; set; }
+
         [InverseProperty("DoorbellConnection")]
         public virtual ICollection<RelatedFile>? RelatedFiles { get; set; }
 
