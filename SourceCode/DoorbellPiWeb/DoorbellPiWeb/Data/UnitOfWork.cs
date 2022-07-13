@@ -46,13 +46,13 @@ namespace DoorbellPiWeb.Data
 
         }
         
-        public RepositoryBase<VideoChat> VideoChatRepo { get; set; }
+        public RepositoryBase<VideoChat> VideoChatRepo { get; init; }
         
-        public RepositoryBase<DoorbellConnection> DoorbellConnectionRepo { get; set; }
-        public RepositoryBase<AppConnection> AppConnectionRepo { get; set; }
-        public RepositoryBase<DoorbellStatus> DoorbellStatusRepo { get; set; }
-        public RepositoryBase<RelatedFile> RelatedFileRepo { get; set; }
-        public RepositoryBase<AppConnectionToVideoChat> AppConnectionToVideoChatRepo { get; set; }
+        public RepositoryBase<DoorbellConnection> DoorbellConnectionRepo { get; init; }
+        public RepositoryBase<AppConnection> AppConnectionRepo { get; init; }
+        public RepositoryBase<DoorbellStatus> DoorbellStatusRepo { get; init; }
+        public RepositoryBase<RelatedFile> RelatedFileRepo { get; init; }
+        public RepositoryBase<AppConnectionToVideoChat> AppConnectionToVideoChatRepo { get; init; }
 
 
         /// <summary>

@@ -82,6 +82,9 @@ namespace DoorbellPiWeb.Migrations
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime>("LastTurnedOn")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("PortNumber")
                         .HasColumnType("int");
 

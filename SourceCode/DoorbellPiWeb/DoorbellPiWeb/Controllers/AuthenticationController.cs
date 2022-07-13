@@ -24,12 +24,15 @@ namespace DoorbellPiWeb.Controllers
 
         private readonly string _serverPassword;
 
+        private readonly string _serverURL;
+
         private UnitOfWork _unitOfWork;
 
         public AuthenticationController(IConfiguration config, UnitOfWork unitOfWork)
         {
             _jwtKey = config["JWTServerKey"];
             _serverPassword = config["ServerPassword"];
+            _serverURL = config["WebServerURL"];
             _unitOfWork = unitOfWork;
         }
 
@@ -51,7 +54,7 @@ namespace DoorbellPiWeb.Controllers
                     appConnection = new AppConnection
                     {
                         UUID = deviceLoginInfo.DeviceUUID,
-                        DisplayName = deviceLoginInfo.DisplayName,
+                        DisplayName = FindAvailableDisplayName(deviceLoginInfo.DisplayName),
                         LastLoginTime = DateTime.UtcNow,
                         IsBanned = false,
 
@@ -65,7 +68,8 @@ namespace DoorbellPiWeb.Controllers
                 }
                 else
                 {
-                    appConnection.DisplayName = deviceLoginInfo.DisplayName;
+                    appConnection.DisplayName = (deviceLoginInfo.DisplayName == appConnection.DisplayName)
+                        ? deviceLoginInfo.DisplayName : FindAvailableDisplayName(deviceLoginInfo.DisplayName);
                     appConnection.LastLoginTime = DateTime.UtcNow;
                     _unitOfWork.AppConnectionRepo.Update(appConnection);
                 }
@@ -84,7 +88,7 @@ namespace DoorbellPiWeb.Controllers
                     doorbellConnection = new DoorbellConnection
                     {
                         UUID = deviceLoginInfo.DeviceUUID,
-                        DisplayName = deviceLoginInfo.DisplayName,
+                        DisplayName = FindAvailableDisplayName(deviceLoginInfo.DisplayName),
                         LastLoginTime = DateTime.UtcNow,
                         IPAddress = deviceLoginInfo.IPAddress,
                         PortNumber = (int)deviceLoginInfo.Port,
@@ -100,7 +104,8 @@ namespace DoorbellPiWeb.Controllers
                 }
                 else
                 {
-                    doorbellConnection.DisplayName = deviceLoginInfo.DisplayName;
+                    doorbellConnection.DisplayName = (deviceLoginInfo.DisplayName == doorbellConnection.DisplayName)
+                        ? deviceLoginInfo.DisplayName : FindAvailableDisplayName(deviceLoginInfo.DisplayName);
                     doorbellConnection.LastLoginTime = DateTime.UtcNow;
                     doorbellConnection.LastTurnedOn = (deviceLoginInfo.LastTurnedOn != null) // If the turn on time was supplied
                         ? (new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).AddSeconds(Convert.ToDouble(deviceLoginInfo.LastTurnedOn)) // Then convert the UTC Unix timestamp to Datetime
@@ -122,14 +127,29 @@ namespace DoorbellPiWeb.Controllers
             var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtKey));
             var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
             var tokenOptions = new JwtSecurityToken(
-                issuer: "https://localhost:5001",
-                audience: "https://localhost:5001",
+                issuer: _serverURL,
+                audience: _serverURL,
                 claims: new List<Claim>(),
                 expires: DateTime.Now.AddDays(3),
                 signingCredentials: signinCredentials
             );
             var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
             return Ok(new DeviceLoginToken { Token = tokenString });
+        }
+
+        // Return the name with a number appended if it is already taken, so that names are unique
+        private string FindAvailableDisplayName(string attemptedName)
+        {
+            string currentName = attemptedName.ToString();
+            int addedNumber = 1;
+
+            while (_unitOfWork.AppConnectionRepo.Get(app => app.DisplayName == currentName).Any() 
+                || _unitOfWork.DoorbellConnectionRepo.Get(doorbell => doorbell.DisplayName == currentName).Any())
+            {
+                currentName = $"{attemptedName} ({addedNumber++})";
+            }
+
+            return currentName;
         }
     }
 }

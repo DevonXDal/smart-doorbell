@@ -1,6 +1,7 @@
 using DoorbellPiWeb.Data;
 using DoorbellPiWeb.Models.Db;
 using DoorbellPiWeb.Models.Db.MtoM;
+using DoorbellPiWeb.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,10 +18,11 @@ builder.Services.AddAuthentication(opt => {
 })
     .AddJwtBearer(options =>
     {
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["WebServerURL"],
@@ -62,7 +64,14 @@ builder.Services.AddScoped<RepositoryBase<AppConnectionToVideoChat>>();
 // UnitOfWork to provide decoupling
 builder.Services.AddScoped<UnitOfWork>();
 
+// Provide the handlers for accessing other Web servers
+builder.Services.AddScoped<DoorbellAPIHandler>();
+
 builder.Services.AddControllers();
+
+// Add a HttpClient for use with making Web requests
+builder.Services.AddHttpClient();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -76,9 +85,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+} else
+{
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

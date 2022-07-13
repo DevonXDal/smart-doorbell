@@ -2,6 +2,7 @@ using DoorbellPiWeb.Data;
 using DoorbellPiWeb.Enumerations;
 using DoorbellPiWeb.Models.Db;
 using DoorbellPiWeb.Models.Json;
+using DoorbellPiWeb.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,34 +21,49 @@ namespace DoorbellPiWeb.Controllers
     {
         private readonly ILogger<WeatherForecastController> _logger;
         private UnitOfWork _unitOfWork;
+        private readonly DoorbellAPIHandler _doorbellAPIHandler;
 
-        public AppController(ILogger<WeatherForecastController> logger, UnitOfWork unitOfWork)
+        public AppController(ILogger<WeatherForecastController> logger, UnitOfWork unitOfWork, DoorbellAPIHandler doorbellAPIHandler)
         {
             _logger = logger;
             _unitOfWork = unitOfWork;
+            _doorbellAPIHandler = doorbellAPIHandler;
         }
 
         [HttpGet(Name = "GetDoorbells")]
-        public IActionResult GetDoorbells()
+        public async Task<IActionResult> GetDoorbells()
         {
-            ICollection<DoorbellConnection> doorbells = _unitOfWork.DoorbellConnectionRepo.Get().ToList();
+            ICollection<DoorbellConnection> doorbells = _unitOfWork.DoorbellConnectionRepo.Get(d => !d.IsBanned).ToList();
 
             List<DoorbellUpdateData> doorbellListData = new();
             foreach (DoorbellConnection doorbell in doorbells)
             {
-                doorbellListData.Add(GetDoorbellUpdateData(doorbell));
+                doorbellListData.Add(await GetDoorbellUpdateData(doorbell));
             }
 
             return Ok(doorbellListData);
         }
 
-        private DoorbellUpdateData GetDoorbellUpdateData(DoorbellConnection doorbell)
+        [HttpGet(Name = "GetDoorbellUpdate")]
+        public async Task<IActionResult> GetDoorbell([FromBody] string doorbellDisplayName)
+        {
+            DoorbellConnection? doorbell = _unitOfWork.DoorbellConnectionRepo.Get(d => d.DisplayName == doorbellDisplayName && !d.IsBanned).FirstOrDefault();
+
+            if (doorbell == null)
+            {
+                return BadRequest(); // The doorbell with the display name is not on this server (or it is banned)
+            }
+
+            return Ok(await GetDoorbellUpdateData(doorbell));
+        }
+
+        private async Task<DoorbellUpdateData> GetDoorbellUpdateData(DoorbellConnection doorbell)
         {
             DoorbellStatus? mostRecentStatus = _unitOfWork.DoorbellStatusRepo.Get().OrderByDescending(s => s.LastModified).FirstOrDefault();
 
             if (mostRecentStatus == null || mostRecentStatus.LastModified < DateTime.UtcNow.AddSeconds(-20))
             {
-                // Process a status update
+                mostRecentStatus = await _doorbellAPIHandler.RequestDoorbellUpdate(doorbell);
             }
 
             string state = "";

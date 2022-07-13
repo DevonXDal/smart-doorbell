@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:doorbell_pi_app/data/database/app_persistence_db.dart';
 import 'package:doorbell_pi_app/repositories/main_server_repository.dart';
@@ -108,8 +109,10 @@ class AddAServerFormController extends GetxController {
           );
         }
 
+        var token = jsonDecode(possibleConnection.body);
+
         storage.write(key: "Password", value: password.string);
-        storage.write(key: "JWT", value: possibleConnection.body);
+        storage.write(key: "JWT", value: token[0]);
         Get.offAll(const NoDoorbellsRegisteredPage());
       } else if (possibleConnection.statusCode == 400) {
         Get.snackbar("Bad Request", "An error in the app occured trying to contact the Web server.");
