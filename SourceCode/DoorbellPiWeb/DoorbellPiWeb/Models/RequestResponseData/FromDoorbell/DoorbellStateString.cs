@@ -1,4 +1,4 @@
-﻿namespace DoorbellPiWeb.Models.Json.FromDoorbell
+﻿namespace DoorbellPiWeb.Models.RequestResponseData.FromDoorbell
 {
     public class DoorbellStateString
     {

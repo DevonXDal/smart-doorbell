@@ -1,9 +1,11 @@
 using DoorbellPiWeb.Data;
+using DoorbellPiWeb.Helpers.Services;
 using DoorbellPiWeb.Models.Db;
 using DoorbellPiWeb.Models.Db.MtoM;
 using DoorbellPiWeb.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -63,6 +65,7 @@ builder.Services.AddScoped<RepositoryBase<AppConnectionToVideoChat>>();
 
 // UnitOfWork to provide decoupling
 builder.Services.AddScoped<UnitOfWork>();
+builder.Services.AddScoped<FileHandler>();
 
 // Provide the handlers for accessing other Web servers
 builder.Services.AddScoped<DoorbellAPIHandler>();
@@ -72,9 +75,17 @@ builder.Services.AddControllers();
 // Add a HttpClient for use with making Web requests
 builder.Services.AddHttpClient();
 
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    var filePath = Path.Combine(PlatformServices.Default.Application.ApplicationBasePath, "DoorbellPiWeb.xml");
+    c.IncludeXmlComments(filePath);
+
+    // https://stackoverflow.com/questions/54267137/actions-require-unique-method-path-combination-for-swagger
+    c.ResolveConflictingActions(descriptions => descriptions.First());
+}); 
 
 
 
@@ -85,10 +96,21 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // https://www.codegrepper.com/code-examples/whatever/xmlhttprequest+error+flutter+web+localhost - Done for debug Flutter Web to connect
+    app.Use((context, next) =>
+    {
+        context.Response.Headers["Access-Control-Allow-Origin"] = "https://localhost:58881/";
+        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "Origin,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,locale,X-Requested-With,Accept";
+        context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+        return next.Invoke();
+    });
 } else
 {
     app.UseHttpsRedirection();
 }
+
 
 app.UseAuthentication();
 app.UseAuthorization();

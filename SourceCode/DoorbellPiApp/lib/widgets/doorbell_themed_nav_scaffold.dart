@@ -1,6 +1,8 @@
+import 'package:doorbell_pi_app/widgets/server_icons_view.dart';
 import 'package:flutter/material.dart';
 
 import '../data/app_colors.dart';
+import 'doorbell_list_drawer.dart';
 
 /// Prepares the common drawer, app bar, and similar navigation components for each page.
 /// This is done in order to avoid large amounts of code duplications and make page code concise.
@@ -19,16 +21,17 @@ class DoorbellThemedNavScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.navigationBackgroundPink,
-        title: Text(
-            title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textForegroundOrange,)
+        title: Tooltip( // Helps when the page name is cutoff on smaller devices
+          message: title,
+          waitDuration: const Duration(milliseconds: 200),
+          child: Text(
+              title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textForegroundOrange,)
+          ),
         ),
-        iconTheme: IconThemeData(color: AppColors.textForegroundOrange, size: 30),
-        actions: [
-          Icon(Icons.wifi, color: Colors.grey, size: 30),
-          SizedBox(width: 20,),
-          Icon(Icons.info_outline_rounded, color: Colors.grey, size: 30,),
-          SizedBox(width: 20,),
+        iconTheme: const IconThemeData(color: AppColors.textForegroundOrange, size: 30),
+        actions: const [
+          ServerIconsView()
         ],
       ),
       body: Padding(
@@ -44,59 +47,7 @@ class DoorbellThemedNavScaffold extends StatelessWidget {
           ),
         ),
       ),
-      drawer: Container(
-        width: 250,
-        child: Drawer(
-          backgroundColor: AppColors.navigationBackgroundPink,
-
-          child: Column(
-            children: [
-              Padding(padding: EdgeInsets.only(top: 40)),
-              const Text(
-                  'Available Doorbells',
-                  style: const TextStyle(fontSize: 18, color: AppColors.textForegroundOrange,)),
-              Divider(color: Colors.yellow,),
-              ListTile(
-                title: const Text(
-                    'Front Door',
-                    style: const TextStyle(fontSize: 14, color: AppColors.textForegroundOrange,)),
-                onTap: () {
-                  // Update the state of the app.
-                  // ...
-                },
-              ),
-              ListTile(
-                title: const Text(
-                    'Back Door',
-                    style: const TextStyle(fontSize: 14, color: AppColors.textForegroundOrange,)),
-                onTap: () {
-                  // Update the state of the app.
-                  // ...
-                },
-              ),
-              // https://stackoverflow.com/questions/68707021/align-drawer-list-tile-at-the-bottom-of-the-drawer - Ravindra S. Patil
-              Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const <Widget>[
-                             Icon(Icons.logout, color: AppColors.textForegroundOrange, size: 40,),
-                             Text(
-                                "Logout of Server",
-                                style: TextStyle(fontSize: 14, color: AppColors.textForegroundOrange,)
-                            )
-                          ],
-                        )
-                    ),
-                  )
-              )
-            ],
-          ),
-        ),
-      ),
+      drawer: DoorbellListDrawer(),
       backgroundColor: AppColors.pageBackgroundPurple,
       resizeToAvoidBottomInset: false,
     );

@@ -1,8 +1,8 @@
 ﻿using DoorbellPiWeb.Data;
 using DoorbellPiWeb.Enumerations;
 using DoorbellPiWeb.Models.Db;
-using DoorbellPiWeb.Models.Json;
-using DoorbellPiWeb.Models.Json.FromDoorbell;
+using DoorbellPiWeb.Models.RequestResponseData;
+using DoorbellPiWeb.Models.RequestResponseData.FromDoorbell;
 
 namespace DoorbellPiWeb.Services
 {
@@ -83,7 +83,7 @@ namespace DoorbellPiWeb.Services
         // This does not provide the leading '/' before the path
         private string GetFullURL(DoorbellConnection doorbell, string path)
         {
-            return $"https://{doorbell.IPAddress}:{doorbell.PortNumber}{path}";
+            return $"http://{doorbell.IPAddress}:{doorbell.PortNumber}{path}";
         }
     }
 }

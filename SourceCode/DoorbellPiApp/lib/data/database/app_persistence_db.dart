@@ -2,10 +2,8 @@
 import 'package:doorbell_pi_app/data/database/doorbells.dart';
 import 'package:doorbell_pi_app/data/database/web_servers.dart';
 import 'package:drift/drift.dart';
-import 'package:path/path.dart' as path;
-import 'dart:io';
-import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
+
+//import 'package:path_provider/path_provider.dart';
 
 part 'app_persistence_db.g.dart';
 
@@ -19,10 +17,10 @@ part 'app_persistence_db.g.dart';
 /// Version: 2022-06-26
 @DriftDatabase(tables: [WebServers, Doorbells])
 class AppPersistenceDb extends _$AppPersistenceDb {
-  AppPersistenceDb() : super(_openConnection());
+  AppPersistenceDb(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -32,12 +30,4 @@ class AppPersistenceDb extends _$AppPersistenceDb {
       },
     );
   }
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(path.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase(file);
-  });
 }

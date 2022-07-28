@@ -10,6 +10,11 @@ class DoorbellUpdateData {
 
   // https://www.bezkoder.com/dart-flutter-parse-json-string-array-to-object-list/
   factory DoorbellUpdateData.fromJson(dynamic json) {
-    return DoorbellUpdateData(json['DisplayName'] as String, json['LastTurnedOn'] as int, json['DoorbellStatus'] as String, json['LastActivationUnix'] as int);
+    try {
+      return DoorbellUpdateData(json['displayName'] as String, json['lastTurnedOn'], json['doorbellStatus'] as String, json['lastActivationUnix']);
+    } catch(_) {
+      return DoorbellUpdateData(json[0]['displayName'] as String, json[0]['lastTurnedOn'], json[0]['doorbellStatus'] as String, json[0]['lastActivationUnix']);
+    }
+
   }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:doorbell_pi_app/doorbell_update_data.dart';
+import 'package:doorbell_pi_app/repositories/app_persistence_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
@@ -15,8 +16,13 @@ import '../data/database/app_persistence_db.dart';
 /// All requests to the main Web server will be handled by this class.
 ///
 /// Author: Devon X. Dalrymple
-/// Version: 2022-06-25
+/// Version: 2022-07-14
 class MainServerRepository {
+  late AppPersistenceRepository _persistenceRepository;
+
+  MainServerRepository() {
+    _persistenceRepository = Get.find();
+  }
 
   /// This method attempts to simplify the process of connecting to the Web server to login in the device by requiring only four of the six fields.
   /// The request headers are also configured. No processing of the response happens during this call. That responsibility is left to the caller.
@@ -48,21 +54,22 @@ class MainServerRepository {
       }
       return null;
     }
+
   }
 
   /// This is the method needed in order to go and ask the server for the list of doorbells it currently has and to alter the app's list to match the server's.
   /// Returns true if the connection was made successfully and the database was updated correctly.
   Future<bool> tryUpdatingDoorbellList() async {
-    AppPersistenceDb database = Get.find(); // Dependency inject the database
+    WebServer? server = await _persistenceRepository.getActiveWebServer();
+    if (server == null) return false;
 
-    WebServer server = await (database.select(database.webServers)..where( // Find the app's currently selected server.
-            (webServer) => webServer.activeWebServerConnection.equals(true))).getSingle();
 
     String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetDoorbells";
     var headers = await _buildHeaders(); // Fetches information like the JWT required to successfully connect.
     
     try {
       http.Response response = await http.get(Uri.parse(fetchingDoorbellsURL), headers: headers);
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, true);
 
       if (response.statusCode == 401) { // JWT expired, need to refresh
         if (await _tryRefreshingTheJWT(server)) {
@@ -71,10 +78,10 @@ class MainServerRepository {
       }
 
       if (response.statusCode == 200) {
-        var appDoorbells = await (database.select(database.doorbells)..where( // Get all of the doorbells on the app for this server only. Allows use of different servers more easily later on.
-                (doorbell) => doorbell.serverId.equals(server.id))).get();
+        List<Doorbell>? appDoorbells = await _persistenceRepository.getDoorbellsForActiveServer();
+        if (appDoorbells == null) return false;
 
-        var updateDataGroup = jsonDecode(response.body)['DoorbellUpdateData'] as List; // Multiple sets of DoorbellUpdateData objects should appear in the json. This is step 1 for a list.
+        var updateDataGroup = jsonDecode(response.body) as List; // Multiple sets of DoorbellUpdateData objects should appear in the json. This is step 1 for a list.
         List<DoorbellUpdateData> serverDoorbells = updateDataGroup.map((e) => DoorbellUpdateData.fromJson(e)).toList(); // This is step 2 in the conversion
 
         List<bool> wasSpecificServerListedDoorbellFound = List.generate(serverDoorbells.length, (_) => false); // This boolean lists are used to check which doorbells from app or server,
@@ -87,7 +94,7 @@ class MainServerRepository {
               wasSpecificServerListedDoorbellFound[serverIndex] = true;
               wasSpecificAppListedDoorbellFound[appDoorbellsIndex] = true;
 
-              database.update(database.doorbells).replace( // Update the entry
+              await _persistenceRepository.insertOrUpdateDoorbell( // Update the entry
                   Doorbell(
                       id: appDoorbells[appDoorbellsIndex].id,
                       lastActivationTime: BigInt.from(serverDoorbells[serverIndex].LastActivationUnix),
@@ -95,20 +102,19 @@ class MainServerRepository {
                       activeSinceUnix: BigInt.from(serverDoorbells[serverIndex].lastTurnedOnUnix),
                       doorbellStatus: serverDoorbells[serverIndex].doorbellStatus,
                       name: appDoorbells[appDoorbellsIndex].name
-
                   )
               );
             }
           }
 
           if (!wasSpecificAppListedDoorbellFound[appDoorbellsIndex]) { // Delete current doorbells assigned for the server but that are not listed by the server.
-            (database.delete(database.doorbells)..where((d) => d.id.equals(appDoorbells[appDoorbellsIndex].id))).go();
+            await _persistenceRepository.deleteDoorbell(appDoorbells[appDoorbellsIndex].id);
           }
         }
 
         for (int i = 0; i < serverDoorbells.length; i++) { // This is for any entries that are not currently on the phone
           if (!wasSpecificServerListedDoorbellFound[i]) {
-            database.into(database.doorbells).insert( // Update the entry
+            await _persistenceRepository.insertOrUpdateDoorbell( // Insert the entry
                 Doorbell(
                     id: -1,
                     lastActivationTime: BigInt.from(serverDoorbells[i].LastActivationUnix),
@@ -124,7 +130,9 @@ class MainServerRepository {
 
         return true; // If the status code is reached and no exception is thrown
       }
-    } catch (_) { }
+    } catch (_) {
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, true);
+    }
 
     return false;
   }
@@ -135,21 +143,19 @@ class MainServerRepository {
   Future<bool> tryUpdatingSpecificDoorbell(String displayName) async {
     // For more detailed information in comments on the process used here, check tryUpdatingDoorbellList(). This has to only do one doorbell and is simpler in nature.
 
-    AppPersistenceDb database = Get.find();
+    WebServer? server = await _persistenceRepository.getActiveWebServer();
+    if (server == null) return false;
 
-    WebServer server = await (database.select(database.webServers)..where(
-            (webServer) => webServer.activeWebServerConnection.equals(true))).getSingle();
-    Doorbell doorbellWithDisplayName = await (database.select(database.doorbells)..where(
-            (doorbell) => doorbell.name.equals(displayName))).getSingle();
+    Doorbell? doorbellWithDisplayName = await _persistenceRepository.getDoorbellByDisplayName(displayName);
+    if (doorbellWithDisplayName == null) return false;
 
-    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetDoorbellUpdate";
+    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetDoorbellUpdate?doorbellDisplayName=$displayName";
     var headers = await _buildHeaders();
-    Map doorbellDisplayNameJson = {
-      'doorbellDisplayName': displayName
-    };
+
 
     try {
-      http.Response response = await http.post(Uri.parse(fetchingDoorbellsURL), headers: headers, body: doorbellDisplayNameJson);
+      http.Response response = await http.get(Uri.parse(fetchingDoorbellsURL), headers: headers);
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, true);
 
       if (response.statusCode == 401) { // JWT expired, need to refresh
         if (await _tryRefreshingTheJWT(server)) {
@@ -158,9 +164,10 @@ class MainServerRepository {
       }
 
       if (response.statusCode == 200) {
-        var updateDataForDoorbellWithDisplayName = jsonDecode(response.body)['DoorbellUpdateData'] as DoorbellUpdateData;
 
-        database.update(database.doorbells).replace( // Update the entry
+        DoorbellUpdateData updateDataForDoorbellWithDisplayName = DoorbellUpdateData.fromJson(jsonDecode(response.body));
+
+        _persistenceRepository.insertOrUpdateDoorbell( // Update the entry
             Doorbell(
                 id: doorbellWithDisplayName.id,
                 lastActivationTime: BigInt.from(updateDataForDoorbellWithDisplayName.LastActivationUnix),
@@ -176,9 +183,11 @@ class MainServerRepository {
       }
 
       if (response.statusCode == 400) { // Banned Device or Not Found
-        (database.delete(database.doorbells)..where((d) => d.id.equals(doorbellWithDisplayName.id))).go();
+        await _persistenceRepository.deleteDoorbell(doorbellWithDisplayName.id);
       }
-    } catch (_) { }
+    } catch (_) {
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, false);
+    }
 
     return false;
   }
@@ -188,23 +197,23 @@ class MainServerRepository {
     // https://stackoverflow.com/questions/45031499/how-to-get-unique-device-id-in-flutter - Oswin Noetzelmann
     DeviceInfoPlugin infoPlugin = DeviceInfoPlugin();
 
-    if (Platform.isAndroid) {
-      AndroidDeviceInfo androidInfo = await infoPlugin.androidInfo;
-      return androidInfo.androidId.toString();
-    } else if (kIsWeb) {
+    if (kIsWeb) {
       // As mentioned from the source of this code, no device UUID can be expected from a Web browser, this makes a good effort for one, however.
       WebBrowserInfo webInfo = await infoPlugin.webBrowserInfo;
       String webUUID = webInfo.hardwareConcurrency.toString() + webInfo.browserName.toString();
 
       if (webInfo.userAgent != null) {
-        webUUID = webUUID + webInfo.userAgent.toString();
+        webUUID = webUUID + webInfo.userAgent!.toString();
       }
 
       if (webInfo.vendor != null) {
-        webUUID = webUUID + webInfo.vendor.toString();
+        webUUID = webUUID + webInfo.vendor!.toString();
       }
 
       return webUUID;
+    } else if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await infoPlugin.androidInfo;
+      return androidInfo.androidId.toString() + androidInfo.brand.toString() + androidInfo.board.toString() + androidInfo.fingerprint.toString();
     } else {
       return "UnknownDeviceUUID"; // This should not be thrown but prevents an error from being thrown.
     }
@@ -212,11 +221,12 @@ class MainServerRepository {
 
   }
 
-  Map<String, String> _buildHeaders() {
+  // Provides any necessary security or helper headers for each call to the active Web server.
+  Future<Map<String, String>> _buildHeaders() async {
     FlutterSecureStorage storage = Get.find();
     
     return {
-      'Authorization': "Bearer ${storage.read(key: 'JWT')}"
+      'Authorization': "Bearer ${await storage.read(key: 'JWT')}"
     };
   }
 
@@ -224,19 +234,22 @@ class MainServerRepository {
   Future<bool> _tryRefreshingTheJWT(WebServer server) async {
     FlutterSecureStorage storage = Get.find();
 
-    http.Response? response = await tryLoginAttempt(server.ipAddress, server.portNumber, "${storage.read(key: 'Password')}", server.displayName);
+    String? pass = await storage.read(key: 'Password');
+    http.Response? response = await tryLoginAttempt(server.ipAddress, server.portNumber, pass!, server.displayName);
 
-    if (response == null) {
+    if (response == null)  {
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, false);
       return false;
     }
 
     if (response.statusCode == 200) {
-      storage.write(key: 'JWT', value: jsonDecode(response.body)[0]);
+      var token = await jsonDecode(response.body);
+
+      String tokenValue = token['token'];
+      storage.write(key: "JWT", value: tokenValue);
       return true;
     }
 
     return false;
   }
-
-
 }

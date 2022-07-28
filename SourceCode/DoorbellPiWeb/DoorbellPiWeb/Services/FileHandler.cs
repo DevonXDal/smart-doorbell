@@ -40,9 +40,9 @@ namespace DoorbellPiWeb.Helpers.Services
         /// <param name="fileSaveTo">The type of model that is storing the file</param>
         /// <param name="alteredFileName">A different file name to use</param>
         /// <returns>-1 if the file could not be created or the id of the new file.</returns>
-        public int CreateRelatedFile(IFormFile file, int videoCallId, String? alteredFileName = null)
+        public int CreateRelatedFile(IFormFile file, int doorbellConnectionId, String? alteredFileName = null)
         {
-            if (!TryFileCreationValidation(file, videoCallId))
+            if (!TryFileCreationValidation(file, doorbellConnectionId))
             {
                 return -1;
             }
@@ -57,8 +57,8 @@ namespace DoorbellPiWeb.Helpers.Services
             String fileExtension = Path.GetExtension(filename); //= Regex.Match(file.FileName, "/\\..*$/g").ToString();
             String filenameGuid = Guid.NewGuid().ToString() + fileExtension;
 
-            String fullFilePath = $"{fileStoragePath}{videoCallId}/{filenameGuid}";
-            String relativePath = $"/filesystem/{videoCallId}/{filenameGuid}";
+            String fullFilePath = $"{fileStoragePath}/{doorbellConnectionId}/{filenameGuid}";
+            String relativePath = $"/filesystem/{doorbellConnectionId}/{filenameGuid}";
 
             FileStream fileStream = null;
             bool writtenSuccessfully = false;
@@ -66,7 +66,7 @@ namespace DoorbellPiWeb.Helpers.Services
             {
                 //https://stackoverflow.com/questions/39322085/how-to-save-iformfile-to-disk
                 //https://www.completecsharptutorial.com/basic/c-file-handling-programming-examples-and-practice-question.php
-                DirectoryInfo directory = new DirectoryInfo($"{fileStoragePath}/{videoCallId}");
+                DirectoryInfo directory = new DirectoryInfo($"{fileStoragePath}/{doorbellConnectionId}");
                 if (!directory.Exists)
                 {
                     directory.Create();
@@ -79,7 +79,7 @@ namespace DoorbellPiWeb.Helpers.Services
             }
             catch (IOException e)
             {
-                _logger.LogError(e, $"IO error writing file: {filename}, for video chat: {videoCallId}");
+                _logger.LogError(e, $"IO error writing file: {filename}, for video chat: {doorbellConnectionId}");
             }
             finally
             {
@@ -99,6 +99,7 @@ namespace DoorbellPiWeb.Helpers.Services
             {
                 FilePath = relativePath,
                 FileName = filename,
+                DoorbellConnectionId = doorbellConnectionId,
             };
 
             _unitOfWork.RelatedFileRepo.Insert(entity);

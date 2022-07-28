@@ -1,4 +1,4 @@
-﻿namespace DoorbellPiWeb.Models.Json
+﻿namespace DoorbellPiWeb.Models.RequestResponseData
 {
     public class DeviceLoginModel
     {

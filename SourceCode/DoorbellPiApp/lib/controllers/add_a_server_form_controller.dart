@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:doorbell_pi_app/data/database/app_persistence_db.dart';
+import 'package:doorbell_pi_app/repositories/app_persistence_repository.dart';
 import 'package:doorbell_pi_app/repositories/main_server_repository.dart';
 import 'package:doorbell_pi_app/widgets/pages/no_doorbells_registered_page.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-
 import 'package:http/http.dart' as http;
 
 /// Manages the Add a Server page in order to ensure that form data is validated successfully.
@@ -26,7 +25,7 @@ class AddAServerFormController extends GetxController {
 
   late Timer autoValidationTimer;
 
-  Rxn<Function()> submitFunc = Rxn<Function()>(null);
+  Rxn<Function()> submitFunc = Rxn<Function()>(null); // This is the function called by the submit button.
 
   AddAServerFormController() : super() {
     ipAddress = RxString("");
@@ -46,9 +45,11 @@ class AddAServerFormController extends GetxController {
     autoValidationTimer = Timer.periodic(const Duration(seconds: 2), (timer) { _validations(); }); // Every second, do autovalidation on the fields
   }
 
+  // Goes through the list of different elements to validate and builds an aggregated error message for the user.
+  // If no errors exist, then the submit button is enabled.
   void _validations() async {
     StringBuffer errorBuffer = StringBuffer();
-    submitFunc.value = null; // disable submit while validating
+    submitFunc.value = _submitNotAllowedFunction(); // disable submit while validating
 
     _validateIPAddress(errorBuffer);
     _validatePortNumber(errorBuffer);
@@ -66,6 +67,7 @@ class AddAServerFormController extends GetxController {
     update();
   }
 
+  // Handles the actions taken after the submit button was pressed following successful validation.
   Future<void> Function() _submitFunction() {
     return () async {
       MainServerRepository mainServerRepository = Get.find();
@@ -75,29 +77,27 @@ class AddAServerFormController extends GetxController {
       if (possibleConnection == null) {
         Get.snackbar("Did not Locate Server", "Either the Server IP address and port is incorrect or an Internet connection is missing.");
       } else if (possibleConnection.statusCode == 200) {
-        Get.snackbar("Connection Established", "Please wait while information on the Web server is collected.");
+        Get.snackbar("Connection Established", "Please wait while information on the Web server is collected.", showProgressIndicator: true);
 
         FlutterSecureStorage storage = Get.find();
-        AppPersistenceDb database = Get.find();
+        AppPersistenceRepository _persistenceRepository = Get.find();
 
-        var existingWebServer = await (database.select(database.webServers)..where(
-                (webServer) => webServer.ipAddress.equals(ipAddress.string) & webServer.portNumber.equals(int.parse(port.value)))).get();
+        WebServer? existingWebServer = await _persistenceRepository.getWebServerByIP(ipAddress.string);
 
-        if (existingWebServer.length > 0) { // One already exists
-            WebServer previouslyStored = existingWebServer.first;
-
-            database.update(database.webServers).replace( // Update the entry
+        _persistenceRepository.makeActiveWebServerInactive(); // Just in case, one is still active
+        if (existingWebServer != null) { // One already exists
+            _persistenceRepository.insertOrUpdateWebServer( // Update the entry
                 WebServer(
-                    id: previouslyStored.id,
-                    ipAddress: previouslyStored.ipAddress,
-                    portNumber: previouslyStored.portNumber,
+                    id: existingWebServer.id,
+                    ipAddress: existingWebServer.ipAddress,
+                    portNumber: existingWebServer.portNumber,
                     displayName: displayName.string,
                     lastConnectionSuccessful: true,
                     activeWebServerConnection: true
                 )
             );
         } else {
-          database.into(database.webServers).insert( // Update the entry
+          _persistenceRepository.insertOrUpdateWebServer( // Update the entry
               WebServer(
                   id: -1,
                   ipAddress: ipAddress.string,
@@ -109,11 +109,12 @@ class AddAServerFormController extends GetxController {
           );
         }
 
-        var token = jsonDecode(possibleConnection.body);
+        var token = await jsonDecode(possibleConnection.body);
 
         storage.write(key: "Password", value: password.string);
-        storage.write(key: "JWT", value: token[0]);
-        Get.offAll(const NoDoorbellsRegisteredPage());
+        String tokenValue = token['token'];
+        storage.write(key: "JWT", value: tokenValue);
+        Get.offAll(() => const NoDoorbellsRegisteredPage());
       } else if (possibleConnection.statusCode == 400) {
         Get.snackbar("Bad Request", "An error in the app occured trying to contact the Web server.");
       } else if (possibleConnection.statusCode == 401) {
@@ -123,6 +124,13 @@ class AddAServerFormController extends GetxController {
       } else {
         Get.snackbar("Unknown Status Code (${possibleConnection.statusCode})", "The connection was reached with the Web server but its return is not understood.");
       }
+    };
+  }
+
+  Future<void> Function() _submitNotAllowedFunction() {
+    return () async {
+      Get.snackbar('Unable to Submit',
+          'There are still unmet validation requirements to resolve');
     };
   }
 

@@ -1,6 +1,5 @@
-import 'package:doorbell_pi_app/controllers/doorbell_status_controller.dart';
+import 'package:doorbell_pi_app/controllers/doorbell_page_controllers/doorbell_status_controller.dart';
 import 'package:doorbell_pi_app/data/app_colors.dart';
-import 'package:doorbell_pi_app/data/database/app_persistence_db.dart';
 import 'package:doorbell_pi_app/helpers/observer.dart';
 import 'package:doorbell_pi_app/widgets/apply_view_component_theme.dart';
 import 'package:flutter/material.dart';

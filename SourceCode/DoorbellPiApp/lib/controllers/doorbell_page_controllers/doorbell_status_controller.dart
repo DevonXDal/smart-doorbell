@@ -1,11 +1,9 @@
 import 'package:doorbell_pi_app/controllers/listening_controller.dart';
 import 'package:doorbell_pi_app/helpers/observer.dart';
-import 'package:doorbell_pi_app/repositories/main_server_repository.dart';
-import 'package:doorbell_pi_app/widgets/doorbell_status_view.dart';
-import 'package:get/get.dart';import '../data/database/app_persistence_db.dart';
+import 'package:get/get.dart';
 
-
-import '../data/database/app_persistence_repository.dart';
+import '../../data/database/app_persistence_db.dart';
+import '../../repositories/app_persistence_repository.dart';
 
 class DoorbellStatusController extends ListeningController {
   late final String _doorbellDisplayName;

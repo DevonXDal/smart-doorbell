@@ -1,7 +1,8 @@
 using DoorbellPiWeb.Data;
 using DoorbellPiWeb.Enumerations;
+using DoorbellPiWeb.Helpers.Services;
 using DoorbellPiWeb.Models.Db;
-using DoorbellPiWeb.Models.Json;
+using DoorbellPiWeb.Models.RequestResponseData;
 using DoorbellPiWeb.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,25 +13,27 @@ namespace DoorbellPiWeb.Controllers
     /// This AppController class handles API calls coming from the app. It returns information for Twilio and connected doorbells.
     /// 
     /// Author: Devon X. Dalrymple
-    /// Version 2022-06-26
+    /// Version 2022-07-18
     /// </summary>
     [ApiController]
     [Route("[controller]")]
     [Authorize]
     public class AppController : ControllerBase
     {
-        private readonly ILogger<WeatherForecastController> _logger;
+        private readonly ILogger<AppController> _logger;
         private UnitOfWork _unitOfWork;
         private readonly DoorbellAPIHandler _doorbellAPIHandler;
+        private readonly FileHandler _fileHandler;
 
-        public AppController(ILogger<WeatherForecastController> logger, UnitOfWork unitOfWork, DoorbellAPIHandler doorbellAPIHandler)
+        public AppController(ILogger<AppController> logger, UnitOfWork unitOfWork, DoorbellAPIHandler doorbellAPIHandler, FileHandler fileHandler)
         {
             _logger = logger;
             _unitOfWork = unitOfWork;
             _doorbellAPIHandler = doorbellAPIHandler;
+            _fileHandler = fileHandler;
         }
 
-        [HttpGet(Name = "GetDoorbells")]
+        [HttpGet("GetDoorbells")]
         public async Task<IActionResult> GetDoorbells()
         {
             ICollection<DoorbellConnection> doorbells = _unitOfWork.DoorbellConnectionRepo.Get(d => !d.IsBanned).ToList();
@@ -44,8 +47,8 @@ namespace DoorbellPiWeb.Controllers
             return Ok(doorbellListData);
         }
 
-        [HttpGet(Name = "GetDoorbellUpdate")]
-        public async Task<IActionResult> GetDoorbell([FromBody] string doorbellDisplayName)
+        [HttpGet("GetDoorbellUpdate")]
+        public async Task<IActionResult> GetDoorbellUpdate([FromQuery] string doorbellDisplayName)
         {
             DoorbellConnection? doorbell = _unitOfWork.DoorbellConnectionRepo.Get(d => d.DisplayName == doorbellDisplayName && !d.IsBanned).FirstOrDefault();
 
@@ -57,11 +60,29 @@ namespace DoorbellPiWeb.Controllers
             return Ok(await GetDoorbellUpdateData(doorbell));
         }
 
+        [HttpGet("GetImageFromLastDoorbellPress")]
+        public async Task<IActionResult> GetImageFromLastDoorbellPress([FromQuery] string doorbellDisplayName)
+        {
+            DoorbellConnection? doorbell = _unitOfWork.DoorbellConnectionRepo.Get(d => d.DisplayName == doorbellDisplayName && !d.IsBanned).FirstOrDefault();
+            if (doorbell == null)
+            {
+                return BadRequest("Doorbell Not Found"); // The doorbell with the display name is not on this server (or it is banned)
+            }
+
+            RelatedFile? lastImageFile = _unitOfWork.RelatedFileRepo.Get(f => f.DoorbellConnectionId == doorbell.Id).OrderByDescending(f => f.Created).FirstOrDefault();
+            if (lastImageFile == null)
+            {
+                return StatusCode(500, "No previous image file");
+            }
+
+            return _fileHandler.GetFile(lastImageFile);
+        }
+
         private async Task<DoorbellUpdateData> GetDoorbellUpdateData(DoorbellConnection doorbell)
         {
-            DoorbellStatus? mostRecentStatus = _unitOfWork.DoorbellStatusRepo.Get().OrderByDescending(s => s.LastModified).FirstOrDefault();
+            DoorbellStatus? mostRecentStatus = _unitOfWork.DoorbellStatusRepo.Get().OrderByDescending(s => s.Created).FirstOrDefault();
 
-            if (mostRecentStatus == null || mostRecentStatus.LastModified < DateTime.UtcNow.AddSeconds(-20))
+            if (mostRecentStatus == null || mostRecentStatus.Created.CompareTo(DateTime.UtcNow.AddSeconds(-20)) < 0)
             {
                 mostRecentStatus = await _doorbellAPIHandler.RequestDoorbellUpdate(doorbell);
             }

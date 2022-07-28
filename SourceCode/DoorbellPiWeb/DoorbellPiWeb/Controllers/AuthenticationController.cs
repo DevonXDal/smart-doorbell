@@ -2,7 +2,7 @@
 using DoorbellPiWeb.Models;
 using DoorbellPiWeb.Models.Db;
 using DoorbellPiWeb.Models.Db.NotMapped;
-using DoorbellPiWeb.Models.Json;
+using DoorbellPiWeb.Models.RequestResponseData;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -93,6 +93,10 @@ namespace DoorbellPiWeb.Controllers
                         IPAddress = deviceLoginInfo.IPAddress,
                         PortNumber = (int)deviceLoginInfo.Port,
                         IsBanned = false,
+                        LastTurnedOn = (deviceLoginInfo.LastTurnedOn != null) // If the turn on time was supplied
+                        ? (new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).AddSeconds(Convert.ToDouble(deviceLoginInfo.LastTurnedOn)) // Then convert the UTC Unix timestamp to Datetime
+                        : DateTime.UtcNow.AddMinutes(-5), // Else just use five minutes ago
+                        PreviousActivationTime = DateTime.UtcNow.AddDays(-1) // Done to prevent instant notifications
 
                     };
 
@@ -153,3 +157,4 @@ namespace DoorbellPiWeb.Controllers
         }
     }
 }
+

@@ -1,4 +1,8 @@
+import 'package:doorbell_pi_app/controllers/no_doorbells_registered_controller.dart';
+import 'package:doorbell_pi_app/widgets/apply_view_component_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
 import '../doorbell_themed_nav_scaffold.dart';
 
@@ -7,16 +11,25 @@ class NoDoorbellsRegisteredPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    Get.put(NoDoorbellsRegisteredController());
+
+    NoDoorbellsRegisteredController controller = Get.find();
     return DoorbellThemedNavScaffold (
       title: "No Doorbells Registered",
-      child: Container(
-        decoration: const BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(10))
+      child: ApplyViewComponentTheme (
+          Column(
+            children: [
+              Text(
+              "No doorbells are connected to this server...",
+              style: Theme.of(context).textTheme.bodyMedium,
         ),
-        padding: const EdgeInsets.only(top: 20, bottom: 20),
-        child: Text(
-          "No doorbells are connected to this server..."
-        ),
+              GestureDetector(
+                onTap: () => controller.tryFetchingNewDoorbells(),
+                child: Icon(Icons.lock_reset_rounded),
+              )
+            ],
+          ),
       ),
     );
   }
