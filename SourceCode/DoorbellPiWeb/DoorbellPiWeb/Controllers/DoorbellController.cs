@@ -45,6 +45,9 @@ namespace DoorbellPiWeb.Controllers
             DoorbellConnection? doorbell = _unitOfWork.DoorbellConnectionRepo.Get(d => d.UUID == data.UUID).FirstOrDefault();
             if (doorbell == null) return BadRequest("Doorbell was not found");
 
+            doorbell.PreviousActivationTime = (new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).AddSeconds(Convert.ToDouble(data.ActivationTimeUnix));
+            _unitOfWork.DoorbellConnectionRepo.Update(doorbell);
+
             _unitOfWork.DoorbellStatusRepo.Insert(new DoorbellStatus
             {
                 DoorbellConnectionId = doorbell.Id,

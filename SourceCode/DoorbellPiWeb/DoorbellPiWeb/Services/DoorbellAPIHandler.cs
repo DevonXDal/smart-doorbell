@@ -3,6 +3,8 @@ using DoorbellPiWeb.Enumerations;
 using DoorbellPiWeb.Models.Db;
 using DoorbellPiWeb.Models.RequestResponseData;
 using DoorbellPiWeb.Models.RequestResponseData.FromDoorbell;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace DoorbellPiWeb.Services
 {
@@ -30,8 +32,6 @@ namespace DoorbellPiWeb.Services
 
         public async Task<DoorbellStatus> RequestDoorbellUpdate(DoorbellConnection doorbell)
         {
-            var httpClient = _httpClientFactory.CreateClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(10);
 
             var getRequestMessage = new HttpRequestMessage(HttpMethod.Get, GetFullURL(doorbell, "/FetchStatusUpdate/"));
 
@@ -39,7 +39,7 @@ namespace DoorbellPiWeb.Services
 
             try
             {
-                var dataUpdateResponse = await httpClient.SendAsync(getRequestMessage);
+                var dataUpdateResponse = await GetConfiguredHttpClient().SendAsync(getRequestMessage);
                 dataUpdateResponse.EnsureSuccessStatusCode();
 
                 var stateAsString = (await dataUpdateResponse.Content.ReadFromJsonAsync<DoorbellStateString>()).State;
@@ -79,11 +79,50 @@ namespace DoorbellPiWeb.Services
             return _unitOfWork.DoorbellStatusRepo.Get().OrderByDescending(x => x.Created).FirstOrDefault();
         }
 
+        /// <summary>
+        ///  This is used to send the JWT token to the doorbell to join into the video call with.
+        ///  This should only be called whenver an app user has joined to prevent calls where no app user connects.
+        /// </summary>
+        /// <param name="doorbell">The doorbell entering into a call with the app user(s)</param>
+        /// <param name="connectionData">The data needed to join the call.</param>
+        /// <returns>Whether the information was sent successfully to the doorbell.</returns>
+        public async Task<bool> NotifyDoorbellOfCall(DoorbellConnection doorbell, Dictionary<string, dynamic> connectionData)
+        {
+            // https://stackoverflow.com/questions/37750451/send-http-post-message-in-asp-net-core-using-httpclient-postasjsonasync - Set and Cobus Kruger
+
+            try
+            {
+                string serializedJsonString = JsonConvert.SerializeObject(connectionData);
+
+                await GetConfiguredHttpClient().PostAsync(
+                    GetFullURL(doorbell, "/NotifyOfAppAnswer/"), 
+                    new StringContent(serializedJsonString, Encoding.UTF8, "application/json")
+                    );
+                
+
+                return true;
+            } catch (HttpRequestException _) // Not reaching the doorbell will lead to an Exception
+            {
+                return false;
+            }
+
+            
+        }
+
         // This simplifies the url process for the requests by only requiring the path to go along with the URL.
         // This does not provide the leading '/' before the path
         private string GetFullURL(DoorbellConnection doorbell, string path)
         {
             return $"http://{doorbell.IPAddress}:{doorbell.PortNumber}{path}";
+        }
+
+        // Readies an HttpClient with a ten second timeout
+        private HttpClient GetConfiguredHttpClient()
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+
+            return httpClient;
         }
     }
 }

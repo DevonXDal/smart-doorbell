@@ -18,6 +18,8 @@ namespace DoorbellPiWeb.Models.Db
         public virtual ICollection<AppConnectionToVideoChat>? AppConnections { get; set; }
 
         public bool HasAnyoneAppUserAnswered { get; set; }
+
+        public string AssignedUniqueRoomName { get; set; }
     }
 }
 

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Twilio;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,11 +71,13 @@ builder.Services.AddScoped<FileHandler>();
 // Provide the handlers for accessing other Web servers
 builder.Services.AddScoped<DoorbellAPIHandler>();
 
+// Add Twilio functionality
+builder.Services.AddTransient<TwilioAPIHandler>();
+
 builder.Services.AddControllers();
 
 // Add a HttpClient for use with making Web requests
 builder.Services.AddHttpClient();
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

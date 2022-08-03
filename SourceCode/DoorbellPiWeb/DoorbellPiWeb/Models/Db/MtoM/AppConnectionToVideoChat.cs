@@ -9,6 +9,8 @@ namespace DoorbellPiWeb.Models.Db.MtoM
     /// </summary>
     public class AppConnectionToVideoChat : EntityBase
     {
+        public bool IsStillMarkedAsConnected { get; set; }
+
         public int? AppConnectionId { get; set; }
 
         [ForeignKey("AppConnectionId")]

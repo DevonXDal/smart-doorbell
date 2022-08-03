@@ -1,4 +1,5 @@
 import 'package:doorbell_pi_app/helpers/doorbell_timed_observer.dart';
+import 'package:doorbell_pi_app/widgets/doorbell_page_widgets/doorbell_activity_view.dart';
 import 'package:doorbell_pi_app/widgets/doorbell_page_widgets/doorbell_status_view.dart';
 import 'package:doorbell_pi_app/widgets/doorbell_themed_nav_scaffold.dart';
 import 'package:flutter/widgets.dart';
@@ -29,7 +30,15 @@ class DoorbellPage extends StatelessWidget {
 
     return DoorbellThemedNavScaffold(
       title: doorbellDisplayName,
-      child: DoorbellStatusView(doorbellDisplayName, _observerForDoorbell),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            DoorbellStatusView(doorbellDisplayName, _observerForDoorbell),
+            SizedBox(height: 25,),
+            DoorbellActivityView(doorbellDisplayName, _observerForDoorbell),
+          ],
+        )
+      ),
     );
   }
 

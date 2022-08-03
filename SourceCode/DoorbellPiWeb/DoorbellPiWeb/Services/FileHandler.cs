@@ -191,7 +191,7 @@ namespace DoorbellPiWeb.Helpers.Services
         {
             if (file.FilePath.StartsWith("/filesystem"))
             {
-                return _configuration.GetSection("FileStoragePath").Value + file.FilePath.Replace("/filesystem/", "");
+                return _configuration.GetSection("FileStoragePath").Value + file.FilePath.Replace("/filesystem/", "/");
             }
             else
             {

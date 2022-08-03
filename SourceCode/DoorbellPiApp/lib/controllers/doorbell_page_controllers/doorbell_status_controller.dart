@@ -29,7 +29,7 @@ class DoorbellStatusController extends ListeningController {
   Future<void> _updateViewWithNewInformation() async {
     Doorbell selectedDoorbell = (await _persistenceRepository.getDoorbellByDisplayName(_doorbellDisplayName))!;
     DateTime timeDoorbellWasTurnedOn =  DateTime.fromMillisecondsSinceEpoch(selectedDoorbell.activeSinceUnix.toInt() * 1000, isUtc: true); // Server delivers the time in seconds since epoch
-    timeDoorbellWasTurnedOn = timeDoorbellWasTurnedOn.toLocal().subtract(const Duration(hours: 4)); // TODO: Find out why DateTime is stuck in UTC here
+    timeDoorbellWasTurnedOn = timeDoorbellWasTurnedOn.toLocal(); // TODO: Find out why DateTime is stuck in UTC here
 
     int hourPreformatted = (timeDoorbellWasTurnedOn.hour == 0) ? timeDoorbellWasTurnedOn.hour + 24 : timeDoorbellWasTurnedOn.hour; // Done for the following 24-hour to 12-hour conversion
 

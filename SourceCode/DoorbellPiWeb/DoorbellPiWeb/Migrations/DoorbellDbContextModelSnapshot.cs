@@ -143,6 +143,9 @@ namespace DoorbellPiWeb.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("IsStillMarkedAsConnected")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("datetime(6)");
 
@@ -198,6 +201,10 @@ namespace DoorbellPiWeb.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    b.Property<string>("AssignedUniqueRoomName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime(6)");

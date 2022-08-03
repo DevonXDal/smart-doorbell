@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace DoorbellPiWeb.Migrations
 {
-    public partial class activationTimeTracked : Migration
+    public partial class ResetForTwilioDataNeeded : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -45,6 +45,7 @@ namespace DoorbellPiWeb.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     PortNumber = table.Column<int>(type: "int", nullable: false),
                     PreviousActivationTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    LastTurnedOn = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Created = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     LastModified = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false),
@@ -120,6 +121,8 @@ namespace DoorbellPiWeb.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     DoorbellConnectionId = table.Column<int>(type: "int", nullable: false),
                     HasAnyoneAppUserAnswered = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    AssignedUniqueRoomName = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     Created = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     LastModified = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false)
@@ -142,6 +145,7 @@ namespace DoorbellPiWeb.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    IsStillMarkedAsConnected = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     AppConnectionId = table.Column<int>(type: "int", nullable: true),
                     VideoChatId = table.Column<int>(type: "int", nullable: true),
                     Created = table.Column<DateTime>(type: "datetime(6)", nullable: false),

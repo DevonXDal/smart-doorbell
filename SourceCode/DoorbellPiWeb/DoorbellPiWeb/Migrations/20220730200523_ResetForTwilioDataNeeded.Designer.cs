@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DoorbellPiWeb.Migrations
 {
     [DbContext(typeof(DoorbellDbContext))]
-    [Migration("20220711155958_missing-columns")]
-    partial class missingcolumns
+    [Migration("20220730200523_ResetForTwilioDataNeeded")]
+    partial class ResetForTwilioDataNeeded
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -145,6 +145,9 @@ namespace DoorbellPiWeb.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("IsStillMarkedAsConnected")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("datetime(6)");
 
@@ -200,6 +203,10 @@ namespace DoorbellPiWeb.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    b.Property<string>("AssignedUniqueRoomName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime(6)");

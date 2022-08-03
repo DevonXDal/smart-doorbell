@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:doorbell_pi_app/doorbell_update_data.dart';
@@ -159,7 +160,7 @@ class MainServerRepository {
 
       if (response.statusCode == 401) { // JWT expired, need to refresh
         if (await _tryRefreshingTheJWT(server)) {
-          return tryUpdatingDoorbellList();
+          return tryUpdatingSpecificDoorbell(displayName);
         }
       }
 
@@ -190,6 +191,40 @@ class MainServerRepository {
     }
 
     return false;
+  }
+
+  Future<Uint8List?> tryFetchDoorbellStatusImage(String displayName) async {
+    WebServer? server = await _persistenceRepository.getActiveWebServer();
+    if (server == null) return null;
+
+    Doorbell? doorbellWithDisplayName = await _persistenceRepository.getDoorbellByDisplayName(displayName);
+    if (doorbellWithDisplayName == null) return null;
+
+    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetImageFromLastDoorbellPress?doorbellDisplayName=$displayName";
+    var headers = await _buildHeaders();
+
+    try {
+      http.Response response = await http.get(Uri.parse(fetchingDoorbellsURL), headers: headers);
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, true);
+
+      if (response.statusCode == 401) { // JWT expired, need to refresh
+        if (await _tryRefreshingTheJWT(server)) {
+          return tryFetchDoorbellStatusImage(displayName);
+        }
+      }
+
+      if (response.statusCode == 200) {
+        if (response.bodyBytes.isEmpty) return null;
+
+        return response.bodyBytes; // If the status code is reached and no exception is thrown
+      }
+
+      if (response.statusCode == 400) { // Banned Device or Not Found
+        await _persistenceRepository.deleteDoorbell(doorbellWithDisplayName.id);
+      }
+    } catch (_) {
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, false);
+    }
   }
 
   // This is done in order to help the Web server identify the device between logins.
