@@ -31,7 +31,7 @@ class MainServerRepository {
   Future<http.Response?> tryLoginAttempt(String ipAddress, int port, String password, String displayName) async {
     // https://stackoverflow.com/questions/50278258/http-post-with-json-on-body-flutter-dart - Raj Yadav
 
-    String loginURL = "https://$ipAddress:$port/api/Authentication/login";
+    String loginURL = "https://$ipAddress:$port/Authentication/Login";
 
     Map loginData = {
       "deviceUUID": await _generateDeviceUUID(),

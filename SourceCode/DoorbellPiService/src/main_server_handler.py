@@ -21,7 +21,7 @@ class MainServerHandler:
 
     def try_login(self, time_turned_on_unix):
 
-        path = '/api/Authentication/login'
+        path = '/Authentication/Login'
 
         # https://www.geeksforgeeks.org/extracting-mac-address-using-python/ - The MAC address is the attempt to make each doorbell unique
         login_json = {

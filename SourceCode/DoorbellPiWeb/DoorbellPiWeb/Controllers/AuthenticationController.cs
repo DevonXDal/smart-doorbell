@@ -15,7 +15,7 @@ namespace DoorbellPiWeb.Controllers
     /// <summary>
     /// https://code-maze.com/authentication-aspnetcore-jwt-1/ - Used to understand logging in verification and providing a JWT back if successful.
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
@@ -36,7 +36,7 @@ namespace DoorbellPiWeb.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        [HttpPost("login")]
+        [HttpPost("Login")]
         public IActionResult Login([FromBody] DeviceLoginModel deviceLoginInfo)
         {
             if (!ModelState.IsValid)
