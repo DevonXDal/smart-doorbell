@@ -57,7 +57,7 @@ class DoorbellStatusController extends ListeningController {
     int nowUTCSecondsSinceEpoch = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
     int currentTimeInSecondsSinceEpochMinusTimeDoorbellBecameActive = (currentDoorbell.activeSinceUnix.toInt() - nowUTCSecondsSinceEpoch);
 
-    int expectedTimeLeftFromDoorbell = secondsExpectedFromDoorbellLife - currentTimeInSecondsSinceEpochMinusTimeDoorbellBecameActive; // Numerator for percentage math
+    int expectedTimeLeftFromDoorbell = secondsExpectedFromDoorbellLife + currentTimeInSecondsSinceEpochMinusTimeDoorbellBecameActive; // Numerator for percentage math
     if (expectedTimeLeftFromDoorbell < 0) return 0; // The doorbell might lose power any second now, prevents negative percentages
 
     return ((expectedTimeLeftFromDoorbell / secondsExpectedFromDoorbellLife) * 100).toInt();
