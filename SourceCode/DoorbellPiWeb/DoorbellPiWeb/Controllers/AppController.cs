@@ -104,13 +104,48 @@ namespace DoorbellPiWeb.Controllers
                 {
                     return StatusCode(530); // The connection with the doorbell failed
                 }
-                return new JsonResult(await HandleVideoCallConnection(doorbell, connectingApp));
+                return new JsonResult(connectionData);
             } catch (InvalidOperationException _) // Twilio problems or doorbell state is not correct for this operation
             {
                 return StatusCode(500);
             }
 
             
+        }
+
+        [HttpGet("GetUsersInDoorbellsVideoChatRoom")]
+        public IActionResult GetUsersInDoorbellsVideoChatRoom([FromQuery] string doorbellDisplayName, [FromQuery] string appDeviceUUID)
+        {
+            DoorbellConnection? doorbell = _unitOfWork.DoorbellConnectionRepo.Get(d => d.DisplayName == doorbellDisplayName && !d.IsBanned).FirstOrDefault();
+            if (doorbell == null)
+            {
+                return BadRequest("Doorbell Not Found"); // The doorbell with the display name is not on this server (or it is banned)
+            }
+
+            AppConnection? connectingApp = _unitOfWork.AppConnectionRepo.Get(a => a.UUID == appDeviceUUID && !a.IsBanned).FirstOrDefault();
+            if (connectingApp == null)
+            {
+                return BadRequest("App Device Not Found"); // The doorbell with the display name is not on this server (or it is banned)
+            }
+
+            // Checks if the most recent status was of the doorbell being in a call.
+            if (_unitOfWork.DoorbellStatusRepo.Get(s => s.DoorbellConnectionId == doorbell.Id).OrderByDescending(s => s.Created).FirstOrDefault().State == DoorbellState.InCall)
+            {
+                var currentVideoChat = _unitOfWork.VideoChatRepo.Get(v => v.DoorbellConnectionId == doorbell.Id).OrderByDescending(v => v.Created).FirstOrDefault();
+                var appConnectionsForVideoChat = _unitOfWork.AppConnectionToVideoChatRepo.Get(atv => atv.VideoChatId == currentVideoChat.Id);
+
+                List<string> displayNamesOfConnectedAppUsers = new();
+                foreach (var appUser in appConnectionsForVideoChat)
+                {
+                    var appConnectionInformation = _unitOfWork.AppConnectionRepo.GetByID(appUser.Id);
+
+                    displayNamesOfConnectedAppUsers.Add(appConnectionInformation.DisplayName);
+                }
+
+                return Ok(displayNamesOfConnectedAppUsers);
+            }
+
+            return StatusCode(409); // Not in a call.
         }
 
         private async Task<DoorbellUpdateData> GetDoorbellUpdateData(DoorbellConnection doorbell)

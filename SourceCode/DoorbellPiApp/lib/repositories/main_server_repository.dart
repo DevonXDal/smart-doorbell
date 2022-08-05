@@ -3,7 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:doorbell_pi_app/doorbell_update_data.dart';
+import 'package:doorbell_pi_app/json/doorbell_update_data.dart';
+import 'package:doorbell_pi_app/json/twilio_room_connection_data.dart';
 import 'package:doorbell_pi_app/repositories/app_persistence_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -193,7 +194,11 @@ class MainServerRepository {
     return false;
   }
 
-  Future<Uint8List?> tryFetchDoorbellStatusImage(String displayName) async {
+  /// This is used by the doorbell activity widget in order to fetch the most recent photo taken by the doorbell.
+  /// This image shows what the doorbell saw shortly after the button was pressed.
+  /// The list of unsigned byte integers is used to display the still image in memory without needing file storage usage.
+  /// This returns the memory data in order to provide greater support for Web deployment.
+  Future<Uint8List?> tryFetchDoorbellActivityImage(String displayName) async {
     WebServer? server = await _persistenceRepository.getActiveWebServer();
     if (server == null) return null;
 
@@ -209,7 +214,7 @@ class MainServerRepository {
 
       if (response.statusCode == 401) { // JWT expired, need to refresh
         if (await _tryRefreshingTheJWT(server)) {
-          return tryFetchDoorbellStatusImage(displayName);
+          return tryFetchDoorbellActivityImage(displayName);
         }
       }
 
@@ -224,6 +229,82 @@ class MainServerRepository {
       }
     } catch (_) {
       await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, false);
+    }
+    return null;
+  }
+
+  /// This requests the server to start a video call with the doorbell (if it has not already) and get connection details for this app.
+  /// The information included can be combined with information about this device in order to join the Twilio video call room.
+  Future<TwilioRoomConnectionData?> tryFetchTwilioVideoCallDataForDoorbell(String displayName) async {
+    WebServer? server = await _persistenceRepository.getActiveWebServer();
+    if (server == null) return null;
+
+    Doorbell? doorbellWithDisplayName = await _persistenceRepository.getDoorbellByDisplayName(displayName);
+    if (doorbellWithDisplayName == null) return null;
+
+    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetAccessToDoorbellVideoCallRoom?doorbellDisplayName=$displayName&appDeviceUUID=$_generateDeviceUUID()";
+    var headers = await _buildHeaders();
+
+    try {
+      http.Response response = await http.get(Uri.parse(fetchingDoorbellsURL), headers: headers);
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, true);
+
+      if (response.statusCode == 401) { // JWT expired, need to refresh
+        if (await _tryRefreshingTheJWT(server)) {
+          return tryFetchTwilioVideoCallDataForDoorbell(displayName);
+        }
+      }
+
+      if (response.statusCode == 200) {
+
+        return TwilioRoomConnectionData.fromJson(jsonDecode(response.body));
+      }
+
+      if (response.statusCode == 400) { // Banned Device or Not Found
+        await _persistenceRepository.deleteDoorbell(doorbellWithDisplayName.id);
+      }
+
+      return null;
+    } catch (_) {
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, false);
+    }
+    return null;
+  }
+
+  /// Requests the list of names of app users
+  Future<List<String>?> tryFetchAppUsersInVideoCall(String displayName) async {
+    WebServer? server = await _persistenceRepository.getActiveWebServer();
+    if (server == null) return null;
+
+    Doorbell? doorbellWithDisplayName = await _persistenceRepository.getDoorbellByDisplayName(displayName);
+    if (doorbellWithDisplayName == null) return null;
+
+    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetUsersInDoorbellsVideoChatRoom?doorbellDisplayName=$displayName&appDeviceUUID=$_generateDeviceUUID()";
+    var headers = await _buildHeaders();
+
+    try {
+      http.Response response = await http.get(Uri.parse(fetchingDoorbellsURL), headers: headers);
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, true);
+
+      if (response.statusCode == 401) { // JWT expired, need to refresh
+        if (await _tryRefreshingTheJWT(server)) {
+          return tryFetchAppUsersInVideoCall(displayName);
+        }
+      }
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+
+      if (response.statusCode == 400) { // Banned Device or Not Found
+        await _persistenceRepository.deleteDoorbell(doorbellWithDisplayName.id);
+      }
+
+      return null;
+    } catch (_) {
+      await _persistenceRepository.setWhetherLastConnectionToServerWasSuccessful(server, false);
+
+      return null;
     }
   }
 

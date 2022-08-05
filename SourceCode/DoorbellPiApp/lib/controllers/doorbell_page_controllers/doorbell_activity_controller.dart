@@ -79,7 +79,7 @@ class DoorbellActivityController extends ListeningController {
     _secondsSinceDoorbellPressed = ((DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000) - selectedDoorbell.lastActivationTime.toInt());
 
     if (_secondsSinceDoorbellPressed <= 60) {
-      imageContent.value ??= await _serverRepository.tryFetchDoorbellStatusImage(_doorbellDisplayName);
+      imageContent.value ??= await _serverRepository.tryFetchDoorbellActivityImage(_doorbellDisplayName);
       _handleTimer(true);
     }
   }
