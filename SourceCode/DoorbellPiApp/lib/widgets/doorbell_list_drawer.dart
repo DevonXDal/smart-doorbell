@@ -40,32 +40,47 @@ class DoorbellListDrawer extends StatelessWidget {
                     child: Align(
                         alignment: Alignment.bottomCenter,
                         child: (controller.isConnectedToWebServer.value) ? // Then
-                           GestureDetector(
-                             onTap: () => _showConfirmDisconnectDialog(context, controller),
-                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const <Widget>[
-                                Icon(Icons.logout, color: AppColors.textForegroundOrange, size: 40,),
-                                Text(
-                                    "Disconnect",
-                                    style: TextStyle(fontSize: 14, color: AppColors.textForegroundOrange,)
-                                )
-                              ],
-                          ),
+                           Row(
+                             mainAxisAlignment: MainAxisAlignment.spaceAround,
+                             children: [
+                               GestureDetector(
+                                 onTap: () => controller.performDoorbellListRefresh(),
+                                 child: Row(
+                                   children: [
+                                     const Icon(Icons.refresh, color: AppColors.textForegroundOrange, size: 40),
+                                     Text(
+                                         "Refresh",
+                                         style: TextStyle(fontSize: 14, color: AppColors.textForegroundOrange,)
+                                     )
+                                   ],
+                                 ),
+                               ),
+                               GestureDetector(
+                                 onTap: () => _showConfirmDisconnectDialog(context, controller),
+                                 child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const <Widget>[
+                                    Icon(Icons.logout, color: AppColors.textForegroundOrange, size: 40,),
+                                    Text(
+                                        "Disconnect",
+                                        style: TextStyle(fontSize: 14, color: AppColors.textForegroundOrange,)
+                                    )
+                                  ],
+                                ),
+                               ),
+                             ],
                            ) : // Else
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const <Widget>[
-                            Icon(Icons.logout, color: Colors.grey, size: 40,),
-                            Text(
-                            "Disconnect",
-                            style: TextStyle(fontSize: 14, color: Colors.grey,)
-                            )
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: const [
+                              Icon(Icons.refresh, color: Colors.grey, size: 40),
+                              Icon(Icons.logout, color: Colors.grey, size: 40,),
+
                             ],
                           )
                     ),
                   )
-              )
+              ),
             ],
           ),
         ),

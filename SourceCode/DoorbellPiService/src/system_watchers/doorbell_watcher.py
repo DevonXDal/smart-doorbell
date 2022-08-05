@@ -1,4 +1,4 @@
-import helper_functions
+from src.app_data import AppData
 
 try:  # Wait, you can do this? Neat. https://stackoverflow.com/questions/3131217/error-handling-when-importing-modules
     import RPi.GPIO as GPIO
@@ -6,17 +6,16 @@ except ImportError:
     pass
 
 import os
-import time
-from threading import Thread
 
-import app
-from main_server_handler import MainServerHandler
+from src import helper_functions
+from src.main_server_handler import MainServerHandler
 
 
 class DoorbellWatcher:
-    def __init__(self, server_handler: MainServerHandler):
-        self._buttonOut = app.config('UsingGPIOPinForButtonOut', default=18, cast=int)
-        self._buttonIn = app.config('UsingGPIOPinForButtonIn', default=16, cast=int)
+    def __init__(self, server_handler: MainServerHandler, app_data: AppData):
+        self.app_data = app_data
+        self._buttonOut = self.app_data.config('UsingGPIOPinForButtonOut', default=18, cast=int)
+        self._buttonIn = self.app_data.config('UsingGPIOPinForButtonIn', default=16, cast=int)
         self.server_handler = server_handler
 
         GPIO.setmode(GPIO.BOARD)
@@ -32,7 +31,7 @@ class DoorbellWatcher:
         GPIO.cleanup()
 
     def _fetch_picture(self):
-        filepath = helper_functions.get_placement_file_path()
+        filepath = helper_functions.get_placement_file_path(self.app_data.config)
         os.system(f'libcamera-jpeg -o {filepath}')
 
         self.server_handler.declare_awaiting_answer(filepath)

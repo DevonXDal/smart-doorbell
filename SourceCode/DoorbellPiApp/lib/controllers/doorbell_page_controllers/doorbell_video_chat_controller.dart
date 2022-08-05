@@ -35,6 +35,8 @@ class DoorbellVideoChatController extends ListeningController {
   late RxBool shouldShowWidget; // Whether this widget should show at all.
   late Rx<LoadingState> currentLoadingState;
   late Rx<List<ParticipantWidget>> participants;
+  late RxBool audioInEnabled; // Whether the user's mic is on
+  late RxBool audioOutEnabled; // Whether the user's speakers are outputting the doorbell user's voice
 
   late int _secondsSinceDoorbellPressed;
   late Timer? _countUpTimer;

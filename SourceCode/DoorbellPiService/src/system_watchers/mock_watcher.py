@@ -1,15 +1,15 @@
-import os
 import keyboard
 
 import cv2
 
-import app
-import helper_functions
-from main_server_handler import MainServerHandler
+from src import helper_functions
+from src.app_data import AppData
+from src.main_server_handler import MainServerHandler
 
 
 class MockWatcher:
-    def __init__(self, server_handler: MainServerHandler):
+    def __init__(self, server_handler: MainServerHandler, app_data: AppData):
+        self.app_data = app_data
         keyboard.add_hotkey('ctrl+alt+p', lambda: self._handle_picture_and_send())
         self.server_handler = server_handler
 
@@ -21,7 +21,7 @@ class MockWatcher:
 
         # https://stackoverflow.com/questions/4179220/capture-single-picture-with-opencv - Take and save single frame from webcam
         _, frame = mock_cam.read()
-        filepath = helper_functions.get_placement_file_path()
+        filepath = helper_functions.get_placement_file_path(self.app_data.config)
 
         cv2.imwrite(filepath, frame)
         self.server_handler.declare_awaiting_answer(filepath)

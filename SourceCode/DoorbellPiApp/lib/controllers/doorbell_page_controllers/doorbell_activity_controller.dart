@@ -23,12 +23,14 @@ class DoorbellActivityController extends ListeningController {
 
   late int _secondsSinceDoorbellPressed;
   late Timer? _countUpTimer;
+  late bool _previouslyNotAwaitingAnswer; // Used to refresh the image of the person at the door if the last one is from a previous press.
 
   DoorbellActivityController(this._doorbellDisplayName, Observer observerForDoorbell) : super(observerForDoorbell) {
     _persistenceRepository = Get.find();
     _serverRepository = Get.find();
     _secondsSinceDoorbellPressed = 61;
     _countUpTimer = null; // Deals with LateInitializationError from not being registered as null
+    _previouslyNotAwaitingAnswer = true;
 
     viewMessage = RxString(noActivityString);
     imageContent = Rx(null);
@@ -67,20 +69,24 @@ class DoorbellActivityController extends ListeningController {
 
   Future<void> _fetchNewInformationFromDatabaseAndServer() async {
     Doorbell selectedDoorbell = (await _persistenceRepository.getDoorbellByDisplayName(_doorbellDisplayName))!;
-
-    if (kDebugMode) {
-      print(DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000);
-      print(DateTime.now().toUtc().millisecondsSinceEpoch / 1000);
-      print(selectedDoorbell.lastActivationTime);
-      print(selectedDoorbell.lastActivationTime.toInt());
-      print((DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000) - selectedDoorbell.lastActivationTime.toInt());
-
-    }
     _secondsSinceDoorbellPressed = ((DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000) - selectedDoorbell.lastActivationTime.toInt());
 
     if (_secondsSinceDoorbellPressed <= 60) {
       imageContent.value ??= await _serverRepository.tryFetchDoorbellActivityImage(_doorbellDisplayName);
+
+      if (_previouslyNotAwaitingAnswer) {
+        _previouslyNotAwaitingAnswer = false;
+
+        Uint8List? possibleNewImage = await _serverRepository.tryFetchDoorbellActivityImage(_doorbellDisplayName);
+        if (possibleNewImage != null) {
+          imageContent.value = possibleNewImage;
+        }
+
+      }
+
       _handleTimer(true);
+    } else {
+      _previouslyNotAwaitingAnswer = true;
     }
   }
 

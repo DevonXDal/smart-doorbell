@@ -72,7 +72,7 @@ class AddAServerFormController extends GetxController {
     return () async {
       MainServerRepository mainServerRepository = Get.find();
 
-      http.Response? possibleConnection = await mainServerRepository.tryLoginAttempt(ipAddress.string, int.parse(port.value), password.string, displayName.string);
+      http.Response? possibleConnection = await mainServerRepository.tryLoginAttempt(ipAddress.string.trim(), int.parse(port.value), password.string.trim(), displayName.string.trim());
 
       if (possibleConnection == null) {
         Get.snackbar("Did not Locate Server", "Either the Server IP address and port is incorrect or an Internet connection is missing.");
