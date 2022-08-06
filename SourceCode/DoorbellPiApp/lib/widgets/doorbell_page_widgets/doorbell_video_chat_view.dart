@@ -1,6 +1,9 @@
 import 'package:doorbell_pi_app/controllers/doorbell_page_controllers/doorbell_video_chat_controller.dart';
+import 'package:doorbell_pi_app/data/app_colors.dart';
 import 'package:doorbell_pi_app/data/database/app_persistence_db.dart';
 import 'package:doorbell_pi_app/enumerations/loading_state.dart';
+import 'package:doorbell_pi_app/widgets/apply_view_component_theme.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
@@ -19,19 +22,19 @@ class DoorbellVideoChatView extends StatelessWidget {
     return Obx( ()
     {
         if (!controller.shouldShowWidget.value) {
-          _dontDisplay(context);
+          return _dontDisplay(context);
         }
 
         if (controller.currentLoadingState.value != LoadingState.Loading) {
-          _displayUnconnected(context, controller);
+          return _displayUnconnected(context, controller);
         }
 
         if (controller.currentLoadingState.value == LoadingState.Loading) {
-          _displayLoadingConnection(context, controller);
+          return _displayLoadingConnection(context, controller);
         }
 
         if (controller.isInCall.value) {
-          _displayLoadedConnection(context, controller);
+          return _displayLoadedConnection(context, controller);
         }
 
         Get.snackbar('Incorrect Video Chat Data State', 'The data for whether or not to be in a video call does not make any sense.');
@@ -44,7 +47,38 @@ class DoorbellVideoChatView extends StatelessWidget {
   }
 
   Widget _displayUnconnected(BuildContext context, DoorbellVideoChatController controller) {
-    throw UnimplementedError();
+    return ApplyViewComponentTheme(
+        Stack(
+          children: [
+            Container(
+              width: 300,
+              height: 300,
+              color: AppColors.pageComponentBackgroundDeepDarkBlue,
+              child: Center(
+                child: Obx( () =>
+                  Text(controller.peopleInCall.value)
+                ),
+              ),
+            ),
+            Container(
+              width: 300,
+              height: 50,
+              alignment: Alignment.bottomCenter,
+              color: const Color.fromARGB(128, 0, 51, 56),
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => controller.joinVideoChat(),
+                  child: const Icon(
+                    Icons.phone,
+                    color: AppColors.textForegroundOrange,
+                    size: 42,
+                  ),
+                ),
+              ),
+            )
+          ],
+        )
+    );
   }
 
   Widget _displayLoadingConnection(BuildContext context, DoorbellVideoChatController controller) {

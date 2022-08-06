@@ -261,6 +261,7 @@ class DoorbellVideoChatController extends ListeningController {
 
     if (_secondsSinceDoorbellPressed <= 60) {
       _handleTimer(true);
+      shouldShowWidget.value = true;
 
       if (!isInCall.value) {
         _fetchConnectedAppUsers(selectedDoorbell);

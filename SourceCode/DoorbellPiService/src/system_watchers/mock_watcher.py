@@ -13,6 +13,9 @@ class MockWatcher:
         keyboard.add_hotkey('ctrl+alt+p', lambda: self._handle_picture_and_send())
         self.server_handler = server_handler
 
+    def join_twilio_call(self, rendered_page: str):
+        pass
+
     def end_program(self):
         pass
 

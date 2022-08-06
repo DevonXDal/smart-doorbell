@@ -1,5 +1,5 @@
 from decouple import AutoConfig
-from flask import Flask, abort, request
+from flask import Flask, abort, request, render_template
 from datetime import datetime
 
 from src.app_data import AppData
@@ -41,6 +41,10 @@ def hello():
 def notify_off_app_answer():
     twilio_access_token = request.json['Token']
     twilio_video_call_room = request.json['RoomName']
+
+    connection_data = {'token': twilio_access_token, 'room_name': twilio_video_call_room}
+    rendered_page = render_template('../res/frontend/join_call.html', data=connection_data)
+
 
 
 # Needed for the server to request status updates on the doorbell to update app information.

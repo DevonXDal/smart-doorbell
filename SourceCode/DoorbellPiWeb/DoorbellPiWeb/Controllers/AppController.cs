@@ -150,7 +150,7 @@ namespace DoorbellPiWeb.Controllers
 
         private async Task<DoorbellUpdateData> GetDoorbellUpdateData(DoorbellConnection doorbell)
         {
-            DoorbellStatus? mostRecentStatus = _unitOfWork.DoorbellStatusRepo.Get().OrderByDescending(s => s.Created).FirstOrDefault();
+            DoorbellStatus? mostRecentStatus = _unitOfWork.DoorbellStatusRepo.Get(s => s.DoorbellConnectionId == doorbell.Id).OrderByDescending(s => s.Created).FirstOrDefault();
 
             if (mostRecentStatus == null || mostRecentStatus.Created.CompareTo(DateTime.UtcNow.AddSeconds(-20)) < 0)
             {

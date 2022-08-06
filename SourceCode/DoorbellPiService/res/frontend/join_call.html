@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Twilio Video Call</title>
+     <!-- https://stackoverflow.com/questions/37259740/passing-variables-from-flask-to-javascript For handling Flask to JS data passing -->
+     <script>
+        var token = {{ data.token }};
+        var roomName = {{ data.room_name }};
+    </script>
+
+    <!-- https://www.twilio.com/docs/video/tutorials/get-started-with-twilio-video-python-flask-frontend#create-the-html-file - Reference for setting this up -->
+    <script src="https://sdk.twilio.com/js/video/releases/2.22.1/twilio-video.min.js"></script>
+</head>
+<body>
+    <div id="video-div"></div>
+    <button id="disconnect-button" onclick="disconnect()">|</button>
+</body>
+<script src="./join_call.js"></script>
+</html>

@@ -27,6 +27,9 @@ class DoorbellWatcher:
         # http://raspi.tv/2013/how-to-use-interrupts-with-python-on-the-raspberry-pi-and-rpi-gpio-part-2 - Documentation
         GPIO.add_event_detect(self._buttonIn, GPIO.RISING, callback=self._fetch_picture())
 
+    def join_twilio_call(self, rendered_page: str):
+        pass
+
     def end_program(self):
         GPIO.cleanup()
 

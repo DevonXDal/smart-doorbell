@@ -37,13 +37,15 @@ class DoorbellThemedNavScaffold extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.only(top: 16.0),
         child: Center(
-          child: Column(
-            children: [
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.8,
-                child: child
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: child
+                ),
+              ],
+            ),
           ),
         ),
       ),
