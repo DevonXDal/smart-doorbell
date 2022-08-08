@@ -42,8 +42,9 @@ def hello():
 # This is only necessary when the doorbell has not been previously asked to join the call.
 @app.route('/NotifyOfAppAnswer/', methods=['POST'])
 async def notify_off_app_answer():
-    twilio_access_token = await request.json['Token']
-    twilio_video_call_room = await request.json['RoomName']
+    json_data = await request.get_json()
+    twilio_access_token = json_data['Token']
+    twilio_video_call_room = json_data['RoomName']
 
     connection_data = {'token': twilio_access_token, 'room_name': twilio_video_call_room}
     rendered_page = await render_template('join_call.html', data=connection_data)
@@ -55,13 +56,13 @@ async def notify_off_app_answer():
         rendered_html_file.write(rendered_page)
         rendered_html_file.close()
 
-        await app_data.web_browser_handler.handle_video_chat(filename_and_path, app_data)
+        app.add_background_task(app_data.web_browser_handler.handle_video_chat, filename_and_path, app_data)
 
         # https://stackoverflow.com/questions/26079754/flask-how-to-return-a-success-status-code-for-ajax-call - Philip Bergstrom
-        return {}  # Yeilds a no data OK(200) response
+        return {}  # Yields a no data OK(200) response
 
     except OSError:
-        make_response('Server Error: Failed to Join Call', 500)
+        await make_response('Server Error: Failed to Join Call', 500)
 
 
 # Needed for the server to request status updates on the doorbell to update app information.

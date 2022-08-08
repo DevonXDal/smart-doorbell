@@ -1,4 +1,5 @@
 const videoDiv = document.getElementById("video-div");
+const disconnectButton = document.getElementById("disconnect-button");
 
 // Increases for each person that joins the call including the doorbell.
 // Reaching one after someone leaves the call, indicates that the call should be left
@@ -81,4 +82,5 @@ const handleDisconnectedParticipant = (participant) => {
 
 const disconnect = () => {
   room.disconnect();
+  disconnectButton.parentNode.removeChild(disconnectButton); // Remove the button - This should be detected by arsenic - Notifies of the call being over
 }

@@ -16,16 +16,38 @@ class WebBrowserHandler:
 
     # https://medium.com/analytics-vidhya/asynchronous-web-scraping-101-fetching-multiple-urls-using-arsenic-ec2c2404ecb4 - Code for handling async web requests
     async def handle_video_chat(self, filename_and_path: str, app_data: AppData):
-        driver = Geckodriver(binary=self.config('FirefoxWebDriverPath'))
+        driver_path = os.path.abspath(self.config('FirefoxWebDriverPath'))
+        driver = Geckodriver(binary=driver_path)
         absolute_html_path = os.path.abspath(filename_and_path)
 
         # https://github.com/HENNGE/arsenic/issues/46 - For Firefox options
         browser = Firefox()
 
         limit_in_seconds = 320 # 5 minutes and twenty seconds. The twenty seconds provides it time to connect to the call
-        async with limit_in_seconds:
+        #async with limit_in_seconds:
+
+        try:
             async with get_session(driver, browser) as session:
-                await session.get('file:///' + absolute_html_path)
+                try:
+                    print('file:///' + absolute_html_path)
+                except Exception as e:
+                    print(e)
+                try:
+                    with open(absolute_html_path, 'rb'):
+                        pass
+                except Exception as e:
+                    print(e)
+                try:
+                    await session.get('file:///' + absolute_html_path)
+                except Exception as e:
+                    print(e)
+                await session.wait_for_element_gone(300, '#disconnect-button')
+                self._handle_video_chat_ended()
+
+
+        except Exception as e:
+            print(e)
+
 
 
     def _handle_video_chat_ended(self):

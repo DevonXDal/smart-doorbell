@@ -12,9 +12,7 @@ class NoDoorbellsRegisteredPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    Get.put(NoDoorbellsRegisteredController());
-
-    NoDoorbellsRegisteredController controller = Get.find();
+    NoDoorbellsRegisteredController controller = Get.put(NoDoorbellsRegisteredController());
     return DoorbellThemedNavScaffold (
       title: "No Doorbells Registered",
       child: ApplyViewComponentTheme (
