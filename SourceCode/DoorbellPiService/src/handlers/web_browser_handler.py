@@ -23,31 +23,15 @@ class WebBrowserHandler:
         # https://github.com/HENNGE/arsenic/issues/46 - For Firefox options
         browser = Firefox()
 
-        limit_in_seconds = 320 # 5 minutes and twenty seconds. The twenty seconds provides it time to connect to the call
-        #async with limit_in_seconds:
-
         try:
             async with get_session(driver, browser) as session:
-                try:
-                    print('file:///' + absolute_html_path)
-                except Exception as e:
-                    print(e)
-                try:
-                    with open(absolute_html_path, 'rb'):
-                        pass
-                except Exception as e:
-                    print(e)
-                try:
-                    await session.get('file:///' + absolute_html_path)
-                except Exception as e:
-                    print(e)
+                await session.get('file:///' + absolute_html_path)
+
                 await session.wait_for_element_gone(300, '#disconnect-button')
                 self._handle_video_chat_ended()
 
-
         except Exception as e:
             print(e)
-
 
 
     def _handle_video_chat_ended(self):

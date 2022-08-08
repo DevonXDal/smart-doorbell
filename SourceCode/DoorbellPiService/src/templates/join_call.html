@@ -49,7 +49,7 @@
       window.addEventListener("beforeunload", () => room.disconnect());
     });
     
-    const handleConnectedParticipant = (participant) => {
+    function handleConnectedParticipant(participant) {
       // Tracks the connected participant
     
       // Create a div for this participant's tracks
@@ -67,7 +67,7 @@
       participant.on("trackPublished", handleTrackPublication);
     };
     
-    const handleTrackPublication = (trackPublication, participant) => {
+    function handleTrackPublication(trackPublication, participant) {
       function displayTrack(track) {
         // Append this track to the participant's div and render it on the page
         const participantDiv = document.getElementById(participant.identity);
@@ -86,7 +86,7 @@
       trackPublication.on("subscribed", displayTrack);
     };
     
-    const handleDisconnectedParticipant = (participant) => {
+    function handleDisconnectedParticipant(participant) {
       // Stop listening for this participant
       participant.removeAllListeners();
     
@@ -100,8 +100,8 @@
       }
     };
     
-    const disconnect = () => {
-      room.disconnect();
+    function disconnect() {
+      videoChatRoom.disconnect();
       disconnectButton.parentNode.removeChild(disconnectButton); // Remove the button - This should be detected by arsenic - Notifies of the call being over
     }
 
