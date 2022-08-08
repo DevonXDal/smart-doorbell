@@ -15,6 +15,7 @@ class DoorbellTimedObserver extends Observer {
   DoorbellTimedObserver(this._doorbellDisplayName) : super() {
     _serverRepository = Get.find();
 
+    _fetchNewStatus();
     _updateTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       _fetchNewStatus();
     });

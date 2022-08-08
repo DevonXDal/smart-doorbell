@@ -89,9 +89,9 @@ class AddAServerFormController extends GetxController {
             _persistenceRepository.insertOrUpdateWebServer( // Update the entry
                 WebServer(
                     id: existingWebServer.id,
-                    ipAddress: existingWebServer.ipAddress,
+                    ipAddress: existingWebServer.ipAddress.trim(),
                     portNumber: existingWebServer.portNumber,
-                    displayName: displayName.string,
+                    displayName: displayName.string.trim(),
                     lastConnectionSuccessful: true,
                     activeWebServerConnection: true
                 )
@@ -100,9 +100,9 @@ class AddAServerFormController extends GetxController {
           _persistenceRepository.insertOrUpdateWebServer( // Update the entry
               WebServer(
                   id: -1,
-                  ipAddress: ipAddress.string,
-                  portNumber: int.parse(port.value),
-                  displayName: displayName.string,
+                  ipAddress: ipAddress.string.trim(),
+                  portNumber: int.parse(port.value.trim()),
+                  displayName: displayName.string.trim(),
                   lastConnectionSuccessful: true,
                   activeWebServerConnection: true
               )
@@ -111,7 +111,7 @@ class AddAServerFormController extends GetxController {
 
         var token = await jsonDecode(possibleConnection.body);
 
-        storage.write(key: "Password", value: password.string);
+        storage.write(key: "Password", value: password.string.trim());
         String tokenValue = token['token'];
         storage.write(key: "JWT", value: tokenValue);
         Get.offAll(() => const NoDoorbellsRegisteredPage());

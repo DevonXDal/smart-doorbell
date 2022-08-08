@@ -1,6 +1,9 @@
 # Compiled class file
 *.class
 
+# Folder named 'no tracking'
+no_tracking/
+
 # Log file
 *.log
 

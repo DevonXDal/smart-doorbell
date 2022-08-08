@@ -93,7 +93,7 @@ namespace DoorbellPiWeb.Controllers
             AppConnection? connectingApp = _unitOfWork.AppConnectionRepo.Get(a => a.UUID == appDeviceUUID && !a.IsBanned).FirstOrDefault();
             if (connectingApp == null)
             {
-                return BadRequest("App Device Not Found"); // The doorbell with the display name is not on this server (or it is banned)
+                return Unauthorized("App Device Not Found"); // The doorbell with the display name is not on this server (or it is banned)
             }
 
             try
@@ -125,7 +125,7 @@ namespace DoorbellPiWeb.Controllers
             AppConnection? connectingApp = _unitOfWork.AppConnectionRepo.Get(a => a.UUID == appDeviceUUID && !a.IsBanned).FirstOrDefault();
             if (connectingApp == null)
             {
-                return BadRequest("App Device Not Found"); // The doorbell with the display name is not on this server (or it is banned)
+                return Unauthorized("App Device Not Found"); // The doorbell with the display name is not on this server (or it is banned)
             }
 
             // Checks if the most recent status was of the doorbell being in a call.
@@ -137,7 +137,7 @@ namespace DoorbellPiWeb.Controllers
                 List<string> displayNamesOfConnectedAppUsers = new();
                 foreach (var appUser in appConnectionsForVideoChat)
                 {
-                    var appConnectionInformation = _unitOfWork.AppConnectionRepo.GetByID(appUser.Id);
+                    var appConnectionInformation = _unitOfWork.AppConnectionRepo.GetByID(appUser.AppConnectionId);
 
                     displayNamesOfConnectedAppUsers.Add(appConnectionInformation.DisplayName);
                 }
@@ -197,7 +197,7 @@ namespace DoorbellPiWeb.Controllers
         private async Task<Dictionary<String, dynamic>?> HandleVideoCallConnection(DoorbellConnection doorbell, AppConnection connectingApp) 
         {
             DoorbellState currentDoorbellState = _unitOfWork.DoorbellStatusRepo.Get().OrderByDescending(s => s.Created).FirstOrDefault().State;
-            if (currentDoorbellState != DoorbellState.ButtonRecentlyActivated || currentDoorbellState != DoorbellState.InCall)
+            if (currentDoorbellState != DoorbellState.ButtonRecentlyActivated && currentDoorbellState != DoorbellState.InCall)
             {
                 throw new InvalidOperationException("The doorbell is not waiting for or in a call");
             }

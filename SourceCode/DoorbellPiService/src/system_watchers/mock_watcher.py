@@ -4,7 +4,7 @@ import cv2
 
 from src import helper_functions
 from src.app_data import AppData
-from src.main_server_handler import MainServerHandler
+from src.handlers.main_server_handler import MainServerHandler
 
 
 class MockWatcher:
@@ -24,7 +24,7 @@ class MockWatcher:
 
         # https://stackoverflow.com/questions/4179220/capture-single-picture-with-opencv - Take and save single frame from webcam
         _, frame = mock_cam.read()
-        filepath = helper_functions.get_placement_file_path(self.app_data.config)
+        filepath = helper_functions.get_placement_image_filename_and_path(self.app_data.config)
 
         cv2.imwrite(filepath, frame)
         self.server_handler.declare_awaiting_answer(filepath)

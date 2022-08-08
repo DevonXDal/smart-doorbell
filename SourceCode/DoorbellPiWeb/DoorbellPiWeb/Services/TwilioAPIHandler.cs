@@ -1,4 +1,5 @@
 ﻿using DoorbellPiWeb.Models.RequestResponseData;
+using System.Timers;
 using Twilio;
 using Twilio.Base;
 using Twilio.Jwt.AccessToken;
@@ -63,14 +64,53 @@ namespace DoorbellPiWeb.Services
 
         public async Task<RoomResource> CreateRoomAsync()
         {
-            return await CreateAsync(new CreateRoomOptions()
-            {
-                MaxParticipantDuration = 298, // Five minutes of join time for a participant. It is two seconds less in order to avoid the possibility that it will register as 6 minutes for billing purposes
-                EmptyRoomTimeout = 1, // One minute of no one joining leads to a shutdown of the call
-                Type = RoomTypeEnum.PeerToPeer, // Participants connect usually directly to each other (supports the one video/audio participant [the doorbell] and 10 total audio participants.
-                UnusedRoomTimeout = 1, // If no one is in the call for a minute, shut it down. 
+            const int FIVE_MINUTES_IN_MILLIS = 300000;
 
-            });
+            try
+            {
+                RoomResource room = await CreateAsync(new CreateRoomOptions()
+                {
+                    MaxParticipantDuration = 600, // Five minutes of join time for a participant. It is two seconds less in order to avoid the possibility that it will register as 6 minutes for billing purposes
+                    EmptyRoomTimeout = 1, // One minute of no one joining leads to a shutdown of the call
+                    Type = RoomTypeEnum.PeerToPeer, // Participants connect usually directly to each other (supports the one video/audio participant [the doorbell] and 10 total audio participants.
+                    UnusedRoomTimeout = 1, // If no one is in the call for a minute, shut it down. 
+
+                });
+
+                var roomTimeLimitTimer = new System.Timers.Timer(80000);
+                roomTimeLimitTimer.Elapsed += (Object source, ElapsedEventArgs e) => ForceCompleteRoomSoon(room, roomTimeLimitTimer);
+                roomTimeLimitTimer.Start();
+
+
+                return room;
+            } catch (Exception _)
+            {
+                throw;
+            }
+            
+        }
+        
+        /// <summary>
+        /// Schedules to complete the Twilio video chat room in five minutes. 
+        /// Completing a room kicks all of the participants.
+        /// This is done to prevent calls for going on for more than five minutes.
+        /// The Twilio room MaxPartipantDuration has a minimum of ten minutes, so this is meant to be done and Twilio helps as a fallback call ender.
+        /// </summary>
+        /// <param name="roomToEnd">The room that should be ended after enough time has passed.</param>
+        /// <param name="timerUsed">The timer to stop once it has been ran</param>
+        public static async Task ForceCompleteRoomSoon(RoomResource roomToEnd, System.Timers.Timer timerUsed)
+        {
+            try
+            {
+                timerUsed.Stop();
+                timerUsed.Dispose();
+
+                await RoomResource.UpdateAsync(
+                    status: RoomResource.RoomStatusEnum.Completed,
+                    pathSid: roomToEnd.Sid
+                );
+            }
+            catch (Exception ex) { }
         }
     }
 }

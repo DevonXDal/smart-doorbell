@@ -44,7 +44,7 @@ class DoorbellActivityController extends ListeningController {
 
   void _handleTimer(bool shouldCountUp) {
     if (shouldCountUp && _countUpTimer == null) {
-      _countUpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _countUpTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
         _changeSecondCountOnWidget();
       });
     } else if (_countUpTimer != null) {
@@ -55,7 +55,9 @@ class DoorbellActivityController extends ListeningController {
 
 
   Future<void> _changeSecondCountOnWidget() async {
-    if (++_secondsSinceDoorbellPressed > 60) {
+    _secondsSinceDoorbellPressed += 2;
+
+    if (_secondsSinceDoorbellPressed > 60) {
       viewMessage.value = noActivityString;
       _handleTimer(false);
     } else {

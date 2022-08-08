@@ -236,13 +236,15 @@ class MainServerRepository {
   /// This requests the server to start a video call with the doorbell (if it has not already) and get connection details for this app.
   /// The information included can be combined with information about this device in order to join the Twilio video call room.
   Future<TwilioRoomConnectionData?> tryFetchTwilioVideoCallDataForDoorbell(String displayName) async {
+    String appUUID = await _generateDeviceUUID();
+
     WebServer? server = await _persistenceRepository.getActiveWebServer();
     if (server == null) return null;
 
     Doorbell? doorbellWithDisplayName = await _persistenceRepository.getDoorbellByDisplayName(displayName);
     if (doorbellWithDisplayName == null) return null;
 
-    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetAccessToDoorbellVideoCallRoom?doorbellDisplayName=$displayName&appDeviceUUID=$_generateDeviceUUID()";
+    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetAccessToDoorbellVideoCallRoom?doorbellDisplayName=$displayName&appDeviceUUID=$appUUID";
     var headers = await _buildHeaders();
 
     try {
@@ -273,13 +275,15 @@ class MainServerRepository {
 
   /// Requests the list of names of app users
   Future<List<String>?> tryFetchAppUsersInVideoCall(String displayName) async {
+    String appUUID = await _generateDeviceUUID();
+
     WebServer? server = await _persistenceRepository.getActiveWebServer();
     if (server == null) return null;
 
     Doorbell? doorbellWithDisplayName = await _persistenceRepository.getDoorbellByDisplayName(displayName);
     if (doorbellWithDisplayName == null) return null;
 
-    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetUsersInDoorbellsVideoChatRoom?doorbellDisplayName=$displayName&appDeviceUUID=$_generateDeviceUUID()";
+    String fetchingDoorbellsURL = "https://${server.ipAddress}:${server.portNumber}/App/GetUsersInDoorbellsVideoChatRoom?doorbellDisplayName=$displayName&appDeviceUUID=$appUUID";
     var headers = await _buildHeaders();
 
     try {

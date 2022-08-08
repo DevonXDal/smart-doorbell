@@ -8,7 +8,7 @@ except ImportError:
 import os
 
 from src import helper_functions
-from src.main_server_handler import MainServerHandler
+from src.handlers.main_server_handler import MainServerHandler
 
 
 class DoorbellWatcher:
@@ -34,7 +34,7 @@ class DoorbellWatcher:
         GPIO.cleanup()
 
     def _fetch_picture(self):
-        filepath = helper_functions.get_placement_file_path(self.app_data.config)
+        filepath = helper_functions.get_placement_image_filename_and_path(self.app_data.config)
         os.system(f'libcamera-jpeg -o {filepath}')
 
         self.server_handler.declare_awaiting_answer(filepath)

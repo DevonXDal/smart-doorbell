@@ -58,7 +58,7 @@ class DoorbellVideoChatController extends ListeningController {
 
     peopleInCall = RxString("");
     isInCall = RxBool(false);
-    currentLoadingState = Rx(LoadingState.Initial);
+    currentLoadingState = Rx(LoadingState.Loaded);
     shouldShowWidget = RxBool(false);
 
     _fetchAppDisplayName();
@@ -76,7 +76,6 @@ class DoorbellVideoChatController extends ListeningController {
   /// The user will be notified, via the snackbar, if the connection fails.
   Future<void> joinVideoChat() async {
     currentLoadingState.value = LoadingState.Loading;
-
     TwilioRoomConnectionData? connectionData = await _serverRepository.tryFetchTwilioVideoCallDataForDoorbell(_doorbellDisplayName);
     if (connectionData == null) {
       Get.snackbar("Failed to Connect", "The server was unable to establish a call with the doorbell. Please wait a few seconds and try again.");
@@ -114,6 +113,7 @@ class DoorbellVideoChatController extends ListeningController {
       _streamSubscriptions.add(_videoChatRoom!.onConnectFailure.listen(_onConnectFailure));
 
       isInCall.value = true;
+      currentLoadingState.value = LoadingState.Loaded;
     } catch (e) {
       if (kDebugMode) {
         print(e);
@@ -167,11 +167,6 @@ class DoorbellVideoChatController extends ListeningController {
     if (localParticipant == null) {
       return;
     }
-
-    // Only add ourselves when connected for the first time too.
-    participants.value.add(_buildParticipant(
-        child: localParticipant.localVideoTracks[0].localVideoTrack.widget(),
-        id: const Uuid().v4()));
 
     for (final remoteParticipant in room.remoteParticipants) {
       var participant = participants.value.firstWhereOrNull(

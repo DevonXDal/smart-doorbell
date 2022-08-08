@@ -17,6 +17,7 @@ class AppData:
         self.current_server_JWT = None  # Tracks the current JWT used to connect to the main Web server for requests.
         self.server_handler = None  # Types are removed to prevent circular imports.
         self.system_watcher = None
+        self.web_browser_handler = None
         self.config = AutoConfig(search_path='./.env')
         self.isOnRaspberryPi = self.config('IsOnRaspberryPi', cast=bool)
         self.uuid = ':'.join(re.findall('..', str(hex(uuid.getnode()))))  # Gets the MAC address as a 48bit integer, converts to hexadecimal, and then formats like a MAC address.

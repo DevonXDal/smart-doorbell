@@ -12,9 +12,17 @@ You can find the web driver at https://github.com/mozilla/geckodriver/tree/v0.31
 
 
 ## Adding Environment Variables
+The project expects the environment file to be called ".env" and be placed in the root
+directory of the project. It should be formatted like \
+FirstKey=FirstValue \
+SecondKey=SecondValue \
+ThirdKey=ThirdValue \
+\
+If there are any spaces in the value, then the value must be enclosed in double quotes (")
 
 ### DisplayName="{Name}"
 What the display name of the doorbell should show up as on the server and Twilio video chats.
+Double quotes allow the display name to contain spaces.
 ### UseServerPassword={Password}
 What password to use for the server in order to acquire the JWT.
 ### UseServerIpAddress={IPv4 Address}
@@ -38,3 +46,10 @@ The GPIO pin to detect current from the other GPIO pin on the press of the butto
 detecting current will notify the system that the button has been pressed.
 ### UseUnsecureHTTP={False/True}
 Whether to contact the server with https or http.
+### FirefoxWebDriverPath={../../no_tracking/geckodriver.???}
+Where to find the web driver for Selenium to open Firefox (chromium is more memory hungry...)
+The web driver can be placed anywhere, but in this case, to keep everything together, it will 
+be placed in the project to keep it close to everything else.
+### IdleFirefoxOnPage={https://page.name} (Optional=http://www.blankwebsite.com/)
+This will be the page that firefox idles on, this will allow the Raspberry Pi to join the 
+call more quickly when it starts. This goes to blankwebsite.com if none is specified
