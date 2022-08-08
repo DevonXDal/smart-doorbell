@@ -1,16 +1,15 @@
 import os
 
-from aioflask import Flask, abort, request, render_template
+from quart import Quart, abort, request, render_template, make_response
 from datetime import datetime
 
-import src.app
 from src.app_data import AppData
 from src.handlers.web_browser_handler import WebBrowserHandler
 from src.helper_functions import convert_datetime_to_utc_epoch_int, get_placement_html_filename_and_path
 from src.system_watchers import mock_watcher, doorbell_watcher
 from src.handlers.main_server_handler import MainServerHandler
 
-app = Flask(__name__)
+app = Quart(__name__)
 app_data = AppData()
 
 
@@ -43,11 +42,11 @@ def hello():
 # This is only necessary when the doorbell has not been previously asked to join the call.
 @app.route('/NotifyOfAppAnswer/', methods=['POST'])
 async def notify_off_app_answer():
-    twilio_access_token = request.json['Token']
-    twilio_video_call_room = request.json['RoomName']
+    twilio_access_token = await request.json['Token']
+    twilio_video_call_room = await request.json['RoomName']
 
     connection_data = {'token': twilio_access_token, 'room_name': twilio_video_call_room}
-    rendered_page = render_template('join_call.html', data=connection_data)
+    rendered_page = await render_template('join_call.html', data=connection_data)
     filename_and_path = get_placement_html_filename_and_path(app_data.config)
 
     try:
@@ -62,7 +61,7 @@ async def notify_off_app_answer():
         return {}  # Yeilds a no data OK(200) response
 
     except OSError:
-        abort(500)
+        make_response('Server Error: Failed to Join Call', 500)
 
 
 # Needed for the server to request status updates on the doorbell to update app information.
