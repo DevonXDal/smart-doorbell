@@ -27,14 +27,27 @@ namespace DoorbellPiWeb.Services
             TwilioClient.Init(_config["Twilio:TwilioAccountSID"], _config["Twilio:TwilioAuthToken"]);
         }
 
-        public string GetTwilioJwt(string identity)
-            => new Token(_config["Twilio:TwilioAccountSID"],
+        /// <summary>
+        /// Provides that specific user a grant to the video chat room. 
+        /// This token can only be used for that room.
+        /// </summary>
+        /// <param name="identity">The identity given by this system to that connected system (app user's or doorbell's display name)</param>
+        /// <param name="roomName">The room that this access token can be used to connect to.</param>
+        /// <returns>A JSON Web token as a string that can connect to the video chat.</returns>
+        public string GetTwilioJwt(string identity, string roomName)
+        {
+            var grantToJoinVideoRoom = new VideoGrant();
+            grantToJoinVideoRoom.Room = roomName;
+
+            return new Token(_config["Twilio:TwilioAccountSID"],
                          _config["Twilio:TwilioApiKeySID"],
                          _config["Twilio:TwilioApiKeySecret"],
                          identity ?? Guid.NewGuid().ToString(),
                          grants: new HashSet<IGrant> {
-                             new VideoGrant()
+                             grantToJoinVideoRoom
                          }).ToJwt();
+        }
+            
 
         public async Task<IEnumerable<RoomDetails>> GetAllRoomsAsync()
         {

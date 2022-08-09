@@ -3,12 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Twilio Video Call</title>
-     <!-- https://stackoverflow.com/questions/37259740/passing-variables-from-flask-to-javascript For handling Flask to JS data passing -->
-     <script>
-        var token = "{{ data.token }}";
-        var roomName = "{{ data.room_name }}";
-    </script>
-
     <!-- https://www.twilio.com/docs/video/tutorials/get-started-with-twilio-video-python-flask-frontend#create-the-html-file - Reference for setting this up -->
     <script src="https://sdk.twilio.com/js/video/releases/2.22.1/twilio-video.min.js"></script>
 </head>
@@ -16,10 +10,16 @@
     <div id="video-div"></div>
     <button id="disconnect-button" onclick="disconnect()">Disconnect</button>
 </body>
-<script src="{{ url_for('static', filename='js/join_call.js') }}"></script>
+<!-- <script src=" url_for'static', filename='js/join_call.js'"></script> -->
 <script>
+    // -------------------------------- JAVASCRIPT --------------------------------
+
     const videoDiv = document.getElementById("video-div");
     const disconnectButton = document.getElementById("disconnect-button");
+
+    // https://stackoverflow.com/questions/37259740/passing-variables-from-flask-to-javascript For handling Flask to JS data passing
+    const token1 = "{{ data.token }}";
+    const roomName1 = "{{ data.room_name }}";
     
     // Increases for each person that joins the call including the doorbell.
     // Reaching one after someone leaves the call, indicates that the call should be left
@@ -27,35 +27,58 @@
     var videoChatRoom = null;
     
     // https://stackoverflow.com/questions/4842590/how-to-run-a-function-when-the-page-is-loaded
-    document.addEventListener('DOMContentLoaded', function() {
-      videoChatRoom = async (roomName, token) => {
-        // Join the video room with the Access Token and the given room name
-        const room = await Twilio.Video.connect(token, {
-          room: roomName,
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        videoChatRoom = await Twilio.Video.connect(token1, {
+            room: roomName1,
+
         });
-        return room;
-      };
-    
+      } catch (e) {
+        console.log(e);
+      }
+      
+      console.log(token1);
+      console.log(roomName1);
+      console.log(videoChatRoom);
       // Render the local and remote participants' video and audio tracks
       handleConnectedParticipant(videoChatRoom.localParticipant);
       videoChatRoom.participants.forEach(handleConnectedParticipant);
       videoChatRoom.on("participantConnected", handleConnectedParticipant);
+      videoChatRoom.on("disconnected", handleDisconnected);
+      videoChatRoom.on("reconnecting", handleReconnecting);
+      videoChatRoom.on("connectFailure", handleConnectionFailed);
     
       // Handle cleanup when a participant disconnects
-      room.on("participantDisconnected", handleDisconnectedParticipant);
+      videoChatRoom.on("participantDisconnected", handleDisconnectedParticipant);
     
       // Handle navigation that could occur, has the doorbell leave under different edge case situations. This also helps during testing.
-      window.addEventListener("pagehide", () => room.disconnect());
-      window.addEventListener("beforeunload", () => room.disconnect());
+      window.addEventListener("pagehide", () => disconnect());
+      window.addEventListener("beforeunload", () => disconnect());
     });
+
+    function handleDisconnected() {
+      console.log('Disconnected Now');
+    }
+
+    function handleReconnecting() {
+      console.log('Reconnecting Now');
+    }
+
+    function handleConnectionFailed() {
+      console.log('Connection Failed Now');
+    }
     
     function handleConnectedParticipant(participant) {
       // Tracks the connected participant
+      console.log('Handling ' + participant.identity);
     
       // Create a div for this participant's tracks
       const participantDiv = document.createElement("div");
       participantDiv.setAttribute("id", participant.identity);
-      container.appendChild(participantDiv);
+      videoDiv.appendChild(participantDiv);
+      const nameDiv = document.createElement("div");
+      nameDiv.innerHTML = participant.identity;
+      videoDiv.appendChild(nameDiv);
     
       // Iterate through the participant's published tracks and
       // call `handleTrackPublication` on them
@@ -68,6 +91,7 @@
     };
     
     function handleTrackPublication(trackPublication, participant) {
+      console.log('Track publication of ' + participant.identity);
       function displayTrack(track) {
         // Append this track to the participant's div and render it on the page
         const participantDiv = document.getElementById(participant.identity);
@@ -87,6 +111,7 @@
     };
     
     function handleDisconnectedParticipant(participant) {
+      console.log('Handling the disconnect of ' + participant.identity);
       // Stop listening for this participant
       participant.removeAllListeners();
     

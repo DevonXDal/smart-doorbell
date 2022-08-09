@@ -202,24 +202,22 @@ namespace DoorbellPiWeb.Controllers
                 throw new InvalidOperationException("The doorbell is not waiting for or in a call");
             }
 
-            string twilioAccessToken = _twilioAPIHandler.GetTwilioJwt(connectingApp.DisplayName);
-            
-
             if (currentDoorbellState == DoorbellState.ButtonRecentlyActivated) // Doorbell needs notified and a room generated with the appropriate rules.
             {
                 RoomResource room = await _twilioAPIHandler.CreateRoomAsync();
+                string roomName = room.Sid; // Unique name does not yeild the same name each time.
 
                 VideoChat newVideoChat = new()
                 {
                     DoorbellConnectionId = doorbell.Id,
                     HasAnyoneAppUserAnswered = true,
-                    AssignedUniqueRoomName = room.UniqueName,
+                    AssignedUniqueRoomName = roomName,
                 };
 
                 _unitOfWork.VideoChatRepo.Insert(newVideoChat);
 
-                var connectionDataApp = FormatRoomConnectionData(twilioAccessToken, room.UniqueName); // App connection data
-                var connectionDataDoorbell = FormatRoomConnectionData(_twilioAPIHandler.GetTwilioJwt(doorbell.DisplayName), room.UniqueName); // Doorbell connection data
+                var connectionDataApp = FormatRoomConnectionData(_twilioAPIHandler.GetTwilioJwt(connectingApp.DisplayName, roomName), roomName); // App connection data
+                var connectionDataDoorbell = FormatRoomConnectionData(_twilioAPIHandler.GetTwilioJwt(doorbell.DisplayName, roomName), roomName); // Doorbell connection data
 
                 if (await _doorbellAPIHandler.NotifyDoorbellOfCall(doorbell, connectionDataDoorbell))
                 {
@@ -243,7 +241,9 @@ namespace DoorbellPiWeb.Controllers
             
             
             VideoChat videoChat = _unitOfWork.VideoChatRepo.Get(vc => vc.DoorbellConnectionId == doorbell.Id).OrderByDescending(s => s.Created).FirstOrDefault();
-            var connectionData = FormatRoomConnectionData(twilioAccessToken, videoChat.AssignedUniqueRoomName); // App connection data
+            var connectionData = FormatRoomConnectionData(
+                _twilioAPIHandler.GetTwilioJwt(connectingApp.DisplayName, videoChat.AssignedUniqueRoomName), 
+                videoChat.AssignedUniqueRoomName); // App connection data
 
             _unitOfWork.AppConnectionToVideoChatRepo.Insert(new AppConnectionToVideoChat
             {

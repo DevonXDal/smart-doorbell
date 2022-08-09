@@ -46,6 +46,7 @@ class DoorbellVideoChatController extends ListeningController {
   late Room? _videoChatRoom;
   late List<StreamSubscription> _streamSubscriptions;
 
+  late VideoCapturer _cameraCapturer; // TODO: REMOVE WHEN DONE
 
   DoorbellVideoChatController(this._doorbellDisplayName, Observer observerForDoorbell) : super(observerForDoorbell) {
     _persistenceRepository = Get.find();
@@ -61,7 +62,6 @@ class DoorbellVideoChatController extends ListeningController {
     currentLoadingState = Rx(LoadingState.Loaded);
     shouldShowWidget = RxBool(false);
 
-    _fetchAppDisplayName();
     _fetchNewInformationFromDatabase();
 
   }
@@ -88,6 +88,12 @@ class DoorbellVideoChatController extends ListeningController {
 
     try {
       await TwilioProgrammableVideo.setAudioSettings(speakerphoneEnabled: true, bluetoothPreferred: true); // Uses phone's speakers, or a bluetooth audio output device
+
+      final sources = await CameraSource.getSources();
+      _cameraCapturer = CameraCapturer(
+        sources.firstWhere((source) => source.isFrontFacing),
+      ); // TODO: REMOVE THIS ONCE EVERYTHING WORKS
+
       String trackId = const Uuid().v4();
 
       ConnectOptions connectionOptions = ConnectOptions(
@@ -98,6 +104,7 @@ class DoorbellVideoChatController extends ListeningController {
         dataTracks: [LocalDataTrack(
             DataTrackOptions(name: 'data_track-$trackId')
         )],
+        videoTracks: [LocalVideoTrack(true, _cameraCapturer)], // TODO: REMOVE ONCE DONE
         enableNetworkQuality: true,
         networkQualityConfiguration: NetworkQualityConfiguration(
           remote: NetworkQualityVerbosity.NETWORK_QUALITY_VERBOSITY_MINIMAL
@@ -157,7 +164,7 @@ class DoorbellVideoChatController extends ListeningController {
     Get.snackbar("Chat Connection Lost", "The connection to the chat has been lost. Trying to reconnect...");
   }
 
-  void _onConnected(Room room) {
+  Future<void> _onConnected(Room room) async {
     // When connected for the first time, add remote participant listeners
     _streamSubscriptions
         .add(_videoChatRoom!.onParticipantConnected.listen(_onParticipantConnected));
@@ -168,6 +175,11 @@ class DoorbellVideoChatController extends ListeningController {
       return;
     }
 
+    // Only add ourselves when connected for the first time too.
+    participants.value.add(_buildParticipant(
+        child: localParticipant.localVideoTracks[0].localVideoTrack.widget(),
+        id: await _fetchAppDisplayName()));
+
     for (final remoteParticipant in room.remoteParticipants) {
       var participant = participants.value.firstWhereOrNull(
               (participant) => participant.id == remoteParticipant.sid);
@@ -175,6 +187,7 @@ class DoorbellVideoChatController extends ListeningController {
         _addRemoteParticipantListeners(remoteParticipant);
       }
     }
+    isInCall.value = true;
     reload();
   }
 
@@ -183,13 +196,13 @@ class DoorbellVideoChatController extends ListeningController {
   }
 
   void _onParticipantConnected(RoomParticipantConnectedEvent event) {
-    Get.snackbar("Person joined the call", "${event.remoteParticipant.sid} joined");
+    Get.snackbar("Person joined the call", "${event.remoteParticipant.identity} joined");
     _addRemoteParticipantListeners(event.remoteParticipant);
     reload();
   }
 
   void _onParticipantDisconnected(RoomParticipantDisconnectedEvent event) {
-    Get.snackbar("Person left the call", "${event.remoteParticipant.sid} left");
+    Get.snackbar("Person left the call", "${event.remoteParticipant.identity} left");
     participants.value.removeWhere(
             (ParticipantWidget p) => p.id == event.remoteParticipant.sid);
     reload();
@@ -244,9 +257,10 @@ class DoorbellVideoChatController extends ListeningController {
     }
   }
 
-  Future<void> _fetchAppDisplayName() async {
+  Future<String> _fetchAppDisplayName() async {
     WebServer? currentWebServer = await _persistenceRepository.getActiveWebServer();
 
+    return currentWebServer!.displayName;
   }
 
   // Fetches the most recent information from the app's database. Updates any of the relevant fields
