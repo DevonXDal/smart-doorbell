@@ -46,8 +46,6 @@ class DoorbellVideoChatController extends ListeningController {
   late Room? _videoChatRoom;
   late List<StreamSubscription> _streamSubscriptions;
 
-  late VideoCapturer _cameraCapturer; // TODO: REMOVE WHEN DONE
-
   DoorbellVideoChatController(this._doorbellDisplayName, Observer observerForDoorbell) : super(observerForDoorbell) {
     _persistenceRepository = Get.find();
     _serverRepository = Get.find();
@@ -89,11 +87,6 @@ class DoorbellVideoChatController extends ListeningController {
     try {
       await TwilioProgrammableVideo.setAudioSettings(speakerphoneEnabled: true, bluetoothPreferred: true); // Uses phone's speakers, or a bluetooth audio output device
 
-      final sources = await CameraSource.getSources();
-      _cameraCapturer = CameraCapturer(
-        sources.firstWhere((source) => source.isFrontFacing),
-      ); // TODO: REMOVE THIS ONCE EVERYTHING WORKS
-
       String trackId = const Uuid().v4();
 
       ConnectOptions connectionOptions = ConnectOptions(
@@ -104,7 +97,6 @@ class DoorbellVideoChatController extends ListeningController {
         dataTracks: [LocalDataTrack(
             DataTrackOptions(name: 'data_track-$trackId')
         )],
-        videoTracks: [LocalVideoTrack(true, _cameraCapturer)], // TODO: REMOVE ONCE DONE
         enableNetworkQuality: true,
         networkQualityConfiguration: NetworkQualityConfiguration(
           remote: NetworkQualityVerbosity.NETWORK_QUALITY_VERBOSITY_MINIMAL
@@ -174,11 +166,6 @@ class DoorbellVideoChatController extends ListeningController {
     if (localParticipant == null) {
       return;
     }
-
-    // Only add ourselves when connected for the first time too.
-    participants.value.add(_buildParticipant(
-        child: localParticipant.localVideoTracks[0].localVideoTrack.widget(),
-        id: await _fetchAppDisplayName()));
 
     for (final remoteParticipant in room.remoteParticipants) {
       var participant = participants.value.firstWhereOrNull(
@@ -278,6 +265,9 @@ class DoorbellVideoChatController extends ListeningController {
     }
 
     if (_secondsSinceDoorbellPressed > 60 && selectedDoorbell.doorbellStatus != 'In Call') {
+      try { // Catches zombie connections and tries to rid them
+      } catch (_) {}
+
       shouldShowWidget.value = false;
     }
 

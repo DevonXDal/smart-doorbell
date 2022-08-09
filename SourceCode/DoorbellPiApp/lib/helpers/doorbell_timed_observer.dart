@@ -11,12 +11,12 @@ class DoorbellTimedObserver extends Observer {
   late MainServerRepository _serverRepository;
 
   /// This creates the doorbell timed observer and starts its update counter.
-  /// Every 20 seconds, this will try to update information about the doorbell.
+  /// Every 10 seconds, this will try to update information about the doorbell.
   DoorbellTimedObserver(this._doorbellDisplayName) : super() {
     _serverRepository = Get.find();
 
     _fetchNewStatus();
-    _updateTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+    _updateTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       _fetchNewStatus();
     });
   }
