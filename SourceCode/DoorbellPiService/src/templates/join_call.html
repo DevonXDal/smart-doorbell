@@ -18,8 +18,8 @@
     const disconnectButton = document.getElementById("disconnect-button");
 
     // https://stackoverflow.com/questions/37259740/passing-variables-from-flask-to-javascript For handling Flask to JS data passing
-    const token1 = "{{ data.token }}";
-    const roomName1 = "{{ data.room_name }}";
+    const token = "{{ data.token }}";
+    const roomName = "{{ data.room_name }}";
     
     // Increases for each person that joins the call including the doorbell.
     // Reaching one after someone leaves the call, indicates that the call should be left
@@ -29,17 +29,13 @@
     // https://stackoverflow.com/questions/4842590/how-to-run-a-function-when-the-page-is-loaded
     document.addEventListener('DOMContentLoaded', async function() {
       try {
-        videoChatRoom = await Twilio.Video.connect(token1, {
-            room: roomName1,
-
-        });
+        videoChatRoom = await Twilio.Video.connect(token);
       } catch (e) {
         console.log(e);
       }
       
-      console.log(token1);
-      console.log(roomName1);
       console.log(videoChatRoom);
+
       // Render the local and remote participants' video and audio tracks
       handleConnectedParticipant(videoChatRoom.localParticipant);
       videoChatRoom.participants.forEach(handleConnectedParticipant);
