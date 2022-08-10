@@ -66,6 +66,7 @@
     function handleConnectedParticipant(participant) {
       // Tracks the connected participant
       console.log('Handling ' + participant.identity);
+      peopleRegisteredInCall++;
     
       // Create a div for this participant's tracks
       const participantDiv = document.createElement("div");
@@ -92,7 +93,12 @@
         const participantDiv = document.getElementById(participant.identity);
         // track.attach creates an HTMLVideoElement or HTMLAudioElement
         // (depending on the type of track) and adds the video or audio stream
-        participantDiv.append(track.attach());
+        try {
+          participantDiv.append(track.attach());
+        } catch (e) {
+          console.log('No video from participant')
+        }
+        
       }
     
       // Check if the trackPublication contains a `track` attribute. If it does,
@@ -107,17 +113,18 @@
     
     function handleDisconnectedParticipant(participant) {
       console.log('Handling the disconnect of ' + participant.identity);
+
+      // Decide whether to disconnect from the video chat
+      if (--peopleRegisteredInCall <= 1) {
+        disconnect(); // The doorbell is by itself in the call.
+      }
+      
       // Stop listening for this participant
       participant.removeAllListeners();
     
       // Remove this participant's div from the page
       const participantDiv = document.getElementById(participant.identity);
       participantDiv.remove();
-    
-      // Decide whether to disconnect from the video chat
-      if (--peopleRegisteredInCall == 1) {
-        disconnect(); // The doorbell is by itself in the call.
-      }
     };
     
     function disconnect() {

@@ -14,7 +14,12 @@ namespace DoorbellPiWeb.Controllers
 {
     /// <summary>
     /// https://code-maze.com/authentication-aspnetcore-jwt-1/ - Used to understand logging in verification and providing a JWT back if successful.
+    /// 
+    /// This AuthenticationController is used to handle devices that are attempting to login to this server.
+    /// If a device is successful in logging in, this controller provides a JSON Web token for the device to login in with for the next three days.
     /// </summary>
+    /// Author: Devon X. Dalrymple
+    /// Version: 2022-08-10
     [Route("[controller]")]
     [ApiController]
     public class AuthenticationController : ControllerBase
@@ -28,6 +33,11 @@ namespace DoorbellPiWeb.Controllers
 
         private UnitOfWork _unitOfWork;
 
+        /// <summary>
+        /// Creates an instance of the AuthenticationController for use with logging in various devices.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <param name="unitOfWork"></param>
         public AuthenticationController(IConfiguration config, UnitOfWork unitOfWork)
         {
             _jwtKey = config["JWTServerKey"];
@@ -36,6 +46,15 @@ namespace DoorbellPiWeb.Controllers
             _unitOfWork = unitOfWork;
         }
 
+        /// <summary>
+        /// Uses POST JSON information in order to decide what device is attempting to login, if it is a new device, and that the device has the correct login credentials.
+        /// </summary>
+        /// <param name="deviceLoginInfo">The information a device is attempting to use to login into the Web server with</param>
+        /// <returns>A JWT on success, otherwise 400-500 range status code</returns>
+        /// <response code="200">Request Successful: Returns a OK response with the JSON Web token the device can use for three days.</response>
+        /// <response code="400">A piece of required information was missing from the request.</response>
+        /// <response code="401">The wrong password has been used.</response>
+        /// <response code="403">This device is banned. No JWT will be provided.</response>
         [HttpPost("Login")]
         public IActionResult Login([FromBody] DeviceLoginModel deviceLoginInfo)
         {

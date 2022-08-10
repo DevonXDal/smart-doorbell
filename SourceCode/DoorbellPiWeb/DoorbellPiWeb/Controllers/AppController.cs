@@ -13,9 +13,10 @@ namespace DoorbellPiWeb.Controllers
 {
     /// <summary>
     /// This AppController class handles API calls coming from the app. It returns information for Twilio and connected doorbells.
-    /// 
+    /// This controller should only be used by connecting app user type devices. All requests from the doorbell other than for authentication should be sent to
+    /// the DoorbellController.
     /// Author: Devon X. Dalrymple
-    /// Version 2022-07-18
+    /// Version 2022-08-10
     /// </summary>
     [ApiController]
     [Route("[controller]")]
@@ -37,6 +38,12 @@ namespace DoorbellPiWeb.Controllers
             _fileHandler = fileHandler;
         }
 
+        /// <summary>
+        /// Gets the current status information for every doorbell that is connected to this system and isn't marked as banned and returns them.
+        /// </summary>
+        /// <returns>Doorbell update information identifying the doorbell, when it was last turned on, current state, etc.</returns>
+        /// <response code="200">An OK response that returns a list encoded in JSON with data for each doorbell.</response>
+        /// <response code="401">The device making the request did not provide a valid JWT</response>
         [HttpGet("GetDoorbells")]
         public async Task<IActionResult> GetDoorbells()
         {
@@ -51,6 +58,14 @@ namespace DoorbellPiWeb.Controllers
             return Ok(doorbellListData);
         }
 
+        /// <summary>
+        /// Gets the status update information for a doorbell using the display name provided through the URL query string and returns it.
+        /// </summary>
+        /// <param name="doorbellDisplayName">The display name of the doorbell</param>
+        /// <returns>Status update information for the doorbell</returns>
+        /// <response code="200">A JSON response with a few identifying pieces of information used to represent the current state of the doorbell.</response>
+        /// <response code="400">The request failed because either the doorbell was not found or it is banned from the Web server</response>
+        /// <response code="401">The device making the request did not provide a valid JWT</response>
         [HttpGet("GetDoorbellUpdate")]
         public async Task<IActionResult> GetDoorbellUpdate([FromQuery] string doorbellDisplayName)
         {
@@ -64,6 +79,17 @@ namespace DoorbellPiWeb.Controllers
             return Ok(await GetDoorbellUpdateData(doorbell));
         }
 
+        /// <summary>
+        /// Gets the image that the doorbell, specified by its display name in the query string, sent when the button was last pressed.
+        /// Although this should be used whenever the app detects that the doorbell is awaiting an answer, this will respond with the previous image if there is one.
+        /// Do not use this to check for a recent button activation.
+        /// </summary>
+        /// <param name="doorbellDisplayName">The display name of the doorbell</param>
+        /// <returns>The image if there is one of the previous doorbell activation, stored on the server</returns>
+        /// <response code="200">The image taken and sent to the server when the doorbell was last activated</response>
+        /// <response code="400">The doorbell was either not found or is banned</response>
+        /// <response code="401">The device making the request did not provide a valid JWT</response>
+        /// <response code="500">The server was unable to locate the image</response>
         [HttpGet("GetImageFromLastDoorbellPress")]
         public async Task<IActionResult> GetImageFromLastDoorbellPress([FromQuery] string doorbellDisplayName)
         {
@@ -81,6 +107,20 @@ namespace DoorbellPiWeb.Controllers
 
             return _fileHandler.GetFile(lastImageFile);
         }
+
+        /// <summary>
+        /// Gets the Twilio JSON Web token and room name needed to connect to the Twilio room.
+        /// If no other app devices were previously connected to the video call/chat room, the doorbell will also be sent the same type of information and will join the call.
+        /// This requires the doorbell to be both reachable and expecting of a call (button recently pressed or in a call already).
+        /// </summary>
+        /// <param name="doorbellDisplayName">The display name of the doorbell</param>
+        /// <param name="appDeviceUUID">The UUID that was used to authenticate the app to the Web server</param>
+        /// <returns>The Twilio JWT if the data was provided correctly and at the right time</returns>
+        /// <response code="200">The Twilio JSON Web token and the room name - { token: '', roomName: ''}</response>
+        /// <response code="400">The doorbell was not found or is banned from the server</response>
+        /// <response code="401">The device making the request did not provide a valid JWT or the app's UUID is either not known or banned</response>
+        /// <response code="500">Either the doorbell is not in the required state (awaiting answer after button press or in call) or Twilio may be down</response>
+        /// <response code="530">The doorbell was unable to be reached</response>
         [HttpGet("GetAccessToDoorbellVideoCallRoom")]
         public async Task<IActionResult> GetAccessToDoorbellVideoCallRoom([FromQuery] string doorbellDisplayName, [FromQuery] string appDeviceUUID)
         {
@@ -113,6 +153,16 @@ namespace DoorbellPiWeb.Controllers
             
         }
 
+        /// <summary>
+        /// Gets the app users that are currently in the call with the doorbell.
+        /// </summary>
+        /// <param name="doorbellDisplayName">The display name of the doorbell</param>
+        /// <param name="appDeviceUUID">The UUID that the app used to authenticate with</param>
+        /// <returns>A JSON list of connected app display names</returns>
+        /// <response code="200">An OK response with a JSON list containing the display names used for each app connected to the video chat/call</response>
+        /// <response code="400">Either the doorbell does not exist or is banned</response>
+        /// <response code="401">The device making the request did not provide a valid JWT or the app's UUID is either not known or banned</response>
+        /// <response code="409">The doorbell is not actually in a call right now</response>
         [HttpGet("GetUsersInDoorbellsVideoChatRoom")]
         public IActionResult GetUsersInDoorbellsVideoChatRoom([FromQuery] string doorbellDisplayName, [FromQuery] string appDeviceUUID)
         {
@@ -148,6 +198,8 @@ namespace DoorbellPiWeb.Controllers
             return StatusCode(409); // Not in a call.
         }
 
+        // Fetches up-to-date (up to 20 seconds old) data on the status information for the doorbell and returns it. 
+        // Useful for extracting common functionality out of the Get methods for doorbell status updates.
         private async Task<DoorbellUpdateData> GetDoorbellUpdateData(DoorbellConnection doorbell)
         {
             DoorbellStatus? mostRecentStatus = _unitOfWork.DoorbellStatusRepo.Get(s => s.DoorbellConnectionId == doorbell.Id).OrderByDescending(s => s.Created).FirstOrDefault();

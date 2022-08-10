@@ -31,6 +31,8 @@ class DoorbellTimedObserver extends Observer {
   Future<void> _fetchNewStatus() async {
     if (await _serverRepository.tryUpdatingSpecificDoorbell(_doorbellDisplayName)) {
       notifyListeners();
+    } else {
+      Get.snackbar('Data Out of Date', 'Attempted to contact the Web server for new doorbell information but it could not be reached.');
     }
   }
 

@@ -14,7 +14,7 @@ namespace DoorbellPiWeb.Controllers
     /// This allows the doorbells to notify of people at the door and also make requests relating to access tokens for video calls.
     /// 
     /// Author: Devon X. Dalrymple
-    /// Version: 2022-07-27
+    /// Version: 2022-08-10
     /// </summary>
     [ApiController]
     [Route("[controller]")]
@@ -34,6 +34,15 @@ namespace DoorbellPiWeb.Controllers
             _fileHandler = fileHandler;
         }
 
+        /// <summary>
+        /// Uses POST data to obtain the doorbell's UUID and image form file from the form data in order to mark the doorbell as having recently been activated.
+        /// This requires the form file to be a common image filetype. This also checks to ensure that image/ is in the content type.
+        /// </summary>
+        /// <param name="data">The UUID of the doorbell along with the image form file</param>
+        /// <returns>An OK response with no response body if all is correct</returns>
+        /// <response code="200">No data in response body but everything is in order and has gone through correctly.</response>
+        /// <response code="400">The form data was missing either piece of information for an unbanned doorbell</response>
+        /// <response code="401">The JSON Web token used to authenticate to the server is either out of date or missing</response>
         [HttpPost("DeclareAwaitingAnswer")]
         public IActionResult DeclareAwaitingAnswer([FromForm] DoorbellActivationData data)
         {

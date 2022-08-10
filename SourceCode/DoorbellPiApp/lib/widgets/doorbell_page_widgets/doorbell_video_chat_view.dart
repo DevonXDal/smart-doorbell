@@ -98,16 +98,18 @@ class DoorbellVideoChatView extends StatelessWidget {
                 )
               ),
             ),
-            Container(
-              width: 300,
-              height: 50,
-              alignment: Alignment.bottomCenter,
-              color: const Color.fromARGB(128, 0, 51, 56),
-              child: Center(
-                child: const Icon(
-                  Icons.call_end,
-                  color: Colors.grey,
-                  size: 42,
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 300,
+                height: 50,
+                color: const Color.fromARGB(128, 0, 51, 56),
+                child: Center(
+                  child: const Icon(
+                    Icons.call_end,
+                    color: Colors.grey,
+                    size: 42,
+                  ),
                 ),
               ),
             )
@@ -125,10 +127,19 @@ class DoorbellVideoChatView extends StatelessWidget {
               height: 300,
               color: AppColors.pageComponentBackgroundDeepDarkBlue,
               child: Obx( () {
+                if (controller.participants.value.length == 1) {
+                  return Stack(
+                    children: [
+                        controller.participants.value[0].marginZero.paddingZero
+                    ],
+                  );
+                }
+
                 return Stack(
                   children: [
-                    for(ParticipantWidget participant in controller.participants.value) Card(child: participant,),
-                  ]
+                    for (ParticipantWidget participant in controller.participants.value)
+                      participant.marginZero.paddingZero
+                  ],
                 );
               }),
             ),

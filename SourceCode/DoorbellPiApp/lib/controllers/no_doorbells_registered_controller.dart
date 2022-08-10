@@ -28,6 +28,12 @@ class NoDoorbellsRegisteredController extends GetxController {
 
   // This checks to see if the server has new doorbells listed. If it does, then the
   tryFetchingNewDoorbells() async {
+    var initialDoorbells = await _persistenceRepository.getDoorbellsForActiveServer();
+    if (initialDoorbells != null && initialDoorbells.isNotEmpty) {
+      goToFirstDoorbellInAlphabeticalOrder(initialDoorbells);
+
+      return;
+    }
 
     if (await _serverRepository.tryUpdatingDoorbellList()) {
       List<Doorbell>? doorbellsForActiveServer = await _persistenceRepository.getDoorbellsForActiveServer();
@@ -39,11 +45,15 @@ class NoDoorbellsRegisteredController extends GetxController {
         return;
       }
 
-      doorbellsForActiveServer.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-      _listUpdatingTimer.cancel();
-      Get.off(() => DoorbellPage(doorbellsForActiveServer.first.name));
+      goToFirstDoorbellInAlphabeticalOrder(doorbellsForActiveServer);
     }
+  }
+
+  void goToFirstDoorbellInAlphabeticalOrder(List<Doorbell> doorbells) {
+    doorbells.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    _listUpdatingTimer.cancel();
+    Get.off(() => DoorbellPage(doorbells.first.name));
   }
 
   @override
