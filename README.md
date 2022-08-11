@@ -1,3 +1,6 @@
+# Work In Progress
+This code and documentation is incomplete, serious problems may occur using this system before it is finished.
+
 # Raspberyy Pi Smart Doorbell
 
 This is a smart doorbell project that is built using a Raspberry Pi, an API, and an application (to be decided).
